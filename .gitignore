@@ -1,0 +1,10 @@
+# 秘密情報
+.env
+.env.*
+!.env.example
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store

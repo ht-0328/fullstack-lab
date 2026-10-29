@@ -1,0 +1,20 @@
+[submodule "web"]
+	path = web
+	url = https://github.com/ht-0328/fullstack-lab-web.git
+	branch = main
+[submodule "api"]
+	path = api
+	url = https://github.com/ht-0328/fullstack-lab-api.git
+	branch = main
+[submodule "authz"]
+	path = authz
+	url = https://github.com/ht-0328/fullstack-lab-authz.git
+	branch = main
+[submodule "auth"]
+	path = auth
+	url = https://github.com/ht-0328/fullstack-lab-auth.git
+	branch = main
+[submodule "references/architecture-notes"]
+	path = references/architecture-notes
+	url = https://github.com/ht-0328/architecture-notes.git
+	branch = main

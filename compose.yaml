@@ -1,0 +1,316 @@
+name: fullstack-lab
+
+# 外部に公開するのは nginx（アプリの入口）、keycloak（ログイン画面）、reposilite（Maven リポジトリ）のポートだけ。
+# その他はコンテナ間ネットワーク内でのみ通信する。
+# web/ api/ authz/ auth/ はそれぞれ別リポジトリ（git submodule）。BFF は API / 認可 API / 認証 API のソースではなく、
+# それぞれが publish したクライアント（Maven 成果物）に依存する。
+# depends_on の condition: service_healthy で「起動した」ではなく「応答できる」まで待つ。
+# さらに各アプリは restart: on-failure で、依存先が後から落ちて復帰するケースにも備える。
+
+x-urls:
+  # ブラウザから見た URL（トークンの iss やリダイレクト先になる）
+  customer-app-url: &customer-app-url http://localhost:${NGINX_HOST_PORT:-8080}
+  staff-app-url: &staff-app-url http://admin.localhost:${NGINX_HOST_PORT:-8080}
+  keycloak-url: &keycloak-url http://localhost:${KEYCLOAK_HOST_PORT:-8180}
+
+# oauth2-proxy の共通設定（ALB の認証アクションの代替）
+x-oauth2-proxy: &oauth2-proxy
+  image: quay.io/oauth2-proxy/oauth2-proxy:v7.15.5-alpine
+  healthcheck:
+    test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4180/ping"]
+    interval: 10s
+    timeout: 3s
+    retries: 5
+  restart: unless-stopped
+
+x-oauth2-proxy-env: &oauth2-proxy-env
+  OAUTH2_PROXY_PROVIDER: oidc
+  OAUTH2_PROXY_HTTP_ADDRESS: 0.0.0.0:4180
+  OAUTH2_PROXY_REVERSE_PROXY: "true"
+  # Nginx の auth_request 専用。認証できたら 202 を返すだけで、自分ではプロキシしない
+  OAUTH2_PROXY_UPSTREAMS: static://202
+  OAUTH2_PROXY_SET_XAUTHREQUEST: "true"
+  OAUTH2_PROXY_PASS_ACCESS_TOKEN: "true"
+  OAUTH2_PROXY_SKIP_PROVIDER_BUTTON: "true"
+  OAUTH2_PROXY_SCOPE: openid email profile
+  OAUTH2_PROXY_CODE_CHALLENGE_METHOD: S256
+  OAUTH2_PROXY_EMAIL_DOMAINS: "*"
+  OAUTH2_PROXY_COOKIE_SECRET: ${OAUTH2_PROXY_COOKIE_SECRET:?set OAUTH2_PROXY_COOKIE_SECRET in .env}
+  OAUTH2_PROXY_COOKIE_SECURE: "false"   # ローカルは HTTP のため。AWS では ALB が HTTPS で Cookie を発行する
+  OAUTH2_PROXY_COOKIE_SAMESITE: lax
+  OAUTH2_PROXY_COOKIE_EXPIRE: 8h
+  OAUTH2_PROXY_COOKIE_REFRESH: 4m       # アクセストークンの有効期限（5 分）が切れる前に更新する
+  # ブラウザ向け（ログイン画面）と、コンテナ間（トークン交換・公開鍵）で URL を分ける
+  OAUTH2_PROXY_SKIP_OIDC_DISCOVERY: "true"
+
+services:
+  nginx:
+    image: nginx:1.30-alpine
+    ports:
+      - "${NGINX_HOST_PORT:-8080}:80"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/snippets:/etc/nginx/snippets:ro
+    depends_on:
+      nuxt:
+        condition: service_healthy
+      bff:
+        condition: service_healthy
+      oauth2-proxy-customer:
+        condition: service_healthy
+      oauth2-proxy-staff:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/nginx-health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  oauth2-proxy-customer:
+    <<: *oauth2-proxy
+    environment:
+      <<: *oauth2-proxy-env
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Keycloak (customer)
+      OAUTH2_PROXY_CLIENT_ID: fullstack-lab-customer
+      OAUTH2_PROXY_CLIENT_SECRET: ${CUSTOMER_CLIENT_SECRET:?set CUSTOMER_CLIENT_SECRET in .env}
+      OAUTH2_PROXY_COOKIE_NAME: _fsl_customer
+      OAUTH2_PROXY_REDIRECT_URL: http://localhost:${NGINX_HOST_PORT:-8080}/oauth2/callback
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/customer
+      OAUTH2_PROXY_LOGIN_URL: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/customer/protocol/openid-connect/auth
+      OAUTH2_PROXY_REDEEM_URL: http://keycloak:8080/realms/customer/protocol/openid-connect/token
+      OAUTH2_PROXY_OIDC_JWKS_URL: http://keycloak:8080/realms/customer/protocol/openid-connect/certs
+      OAUTH2_PROXY_BACKEND_LOGOUT_URL: http://keycloak:8080/realms/customer/protocol/openid-connect/logout?id_token_hint={id_token}
+
+  oauth2-proxy-staff:
+    <<: *oauth2-proxy
+    environment:
+      <<: *oauth2-proxy-env
+      OAUTH2_PROXY_PROVIDER_DISPLAY_NAME: Okta 代替 (staff)
+      OAUTH2_PROXY_CLIENT_ID: fullstack-lab-staff
+      OAUTH2_PROXY_CLIENT_SECRET: ${STAFF_CLIENT_SECRET:?set STAFF_CLIENT_SECRET in .env}
+      OAUTH2_PROXY_COOKIE_NAME: _fsl_staff
+      OAUTH2_PROXY_REDIRECT_URL: http://admin.localhost:${NGINX_HOST_PORT:-8080}/oauth2/callback
+      OAUTH2_PROXY_OIDC_ISSUER_URL: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/staff
+      OAUTH2_PROXY_LOGIN_URL: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/staff/protocol/openid-connect/auth
+      OAUTH2_PROXY_REDEEM_URL: http://keycloak:8080/realms/staff/protocol/openid-connect/token
+      OAUTH2_PROXY_OIDC_JWKS_URL: http://keycloak:8080/realms/staff/protocol/openid-connect/certs
+      OAUTH2_PROXY_BACKEND_LOGOUT_URL: http://keycloak:8080/realms/staff/protocol/openid-connect/logout?id_token_hint={id_token}
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.5
+    # 開発モード（組み込み DB）。realm は起動のたびに取り込む（下の volumes を参照）
+    command: ["start-dev", "--import-realm"]
+    ports:
+      - "${KEYCLOAK_HOST_PORT:-8180}:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:?set KEYCLOAK_ADMIN_USER in .env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in .env}
+      # トークンの iss やログイン画面の URL はブラウザから見た URL にし、
+      # コンテナ間の呼び出し（http://keycloak:8080）はそのホスト名のまま受け付ける
+      KC_HOSTNAME: *keycloak-url
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      # realm JSON 内の ${...} に埋め込まれる値
+      CUSTOMER_APP_URL: *customer-app-url
+      STAFF_APP_URL: *staff-app-url
+      CUSTOMER_CLIENT_SECRET: ${CUSTOMER_CLIENT_SECRET}
+      STAFF_CLIENT_SECRET: ${STAFF_CLIENT_SECRET}
+      AUTH_API_CLIENT_SECRET: ${AUTH_API_CLIENT_SECRET}
+      LOCAL_TEST_USER_PASSWORD: ${LOCAL_TEST_USER_PASSWORD:?set LOCAL_TEST_USER_PASSWORD in .env}
+    volumes:
+      # realm customer（一般利用者）の定義は認証 API のリポジトリ（auth/）が持つ。
+      # realm staff は Okta の代替で、業務環境には無い学習用の設定なのでここに置く
+      - ./auth/keycloak/import/customer-realm.json:/opt/keycloak/data/import/customer-realm.json:ro
+      - ./keycloak/import/staff-realm.json:/opt/keycloak/data/import/staff-realm.json:ro
+    healthcheck:
+      # イメージに curl / wget が無いため、bash の /dev/tcp で管理ポートのヘルスエンドポイントを叩く
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    restart: unless-stopped
+
+  nuxt:
+    build:
+      context: ./web
+      dockerfile: frontend/Dockerfile
+    environment:
+      NUXT_BFF_INTERNAL_BASE: http://bff:8080
+    depends_on:
+      bff:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: on-failure
+
+  bff:
+    build:
+      context: ./web
+      dockerfile: bff/Dockerfile
+      # ビルド中に Maven リポジトリ（ローカルは Reposilite の公開ポート）へ到達するため host ネットワークを使う。
+      # Compose の bake バックエンドは host ネットワークを特権扱いして CLI の --allow を要求するが、Compose からは渡せない。
+      # そのため .env の COMPOSE_BAKE=false で従来のビルド経路を使う（docker build --network host と同じ扱い）
+      network: host
+      args:
+        MAVEN_REPO_URL: ${MAVEN_REPO_URL:-http://localhost:8081/releases}
+      secrets:
+        - maven_repo_user
+        - maven_repo_password
+    environment:
+      API_BASE_URL: http://api:8080
+      AUTHZ_BASE_URL: http://authz:8080
+      AUTH_API_BASE_URL: http://auth:8080
+      CUSTOMER_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/customer
+      CUSTOMER_JWK_SET_URI: http://keycloak:8080/realms/customer/protocol/openid-connect/certs
+      CUSTOMER_AUDIENCE: fullstack-lab-customer
+      STAFF_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-8180}/realms/staff
+      STAFF_JWK_SET_URI: http://keycloak:8080/realms/staff/protocol/openid-connect/certs
+      STAFF_AUDIENCE: fullstack-lab-staff
+    depends_on:
+      api:
+        condition: service_healthy
+      authz:
+        condition: service_healthy
+      auth:
+        condition: service_healthy
+      # 公開鍵は最初のリクエスト時に取得するため、起動時点では Keycloak を待たない
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: on-failure
+
+  authz:
+    build: ./authz
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: on-failure
+
+  # 認証 API。Keycloak（realm customer）の Admin API の前段として、会員登録とパスワード変更を BFF から受ける
+  auth:
+    build: ./auth
+    environment:
+      KEYCLOAK_BASE_URL: http://keycloak:8080
+      KEYCLOAK_REALM: customer
+      AUTH_API_CLIENT_ID: auth-api
+      AUTH_API_CLIENT_SECRET: ${AUTH_API_CLIENT_SECRET:?set AUTH_API_CLIENT_SECRET in .env}
+    # Keycloak の起動は待たない（サービスアカウントのトークンは最初の呼び出し時に取得する。BFF の公開鍵と同じ方針）
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: on-failure
+
+  api:
+    build: ./api
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:?set POSTGRES_DB in .env}
+      DB_USERNAME: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      EXTERNAL_CALENDAR_BASE_URL: http://wiremock:8080
+      EXTERNAL_CALENDAR_API_KEY: ${EXTERNAL_CALENDAR_API_KEY:?set EXTERNAL_CALENDAR_API_KEY in .env}
+    depends_on:
+      db:
+        condition: service_healthy
+      # 外部サービスは「起動していれば良い」。落ちていても API 自体は起動させ、呼び出し時に縮退させる
+      wiremock:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 40s
+    restart: on-failure
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  wiremock:
+    image: wiremock/wiremock:3.13.2
+    command: ["--disable-banner"]
+    volumes:
+      - ./api/wiremock:/home/wiremock:ro
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8080/__admin/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  # Maven リポジトリ（AWS の CodeArtifact の代替）。api / authz が生成クライアントを publish し、bff が取得する
+  reposilite:
+    image: dzikoysk/reposilite:3.6.3
+    ports:
+      - "${REPOSILITE_HOST_PORT:-8081}:8080"
+    environment:
+      # publish 用のトークン。取得（releases の読み取り）は匿名で可能
+      REPOSILITE_OPTS: --token ${MAVEN_REPO_USER:?set MAVEN_REPO_USER in .env}:${MAVEN_REPO_PASSWORD:?set MAVEN_REPO_PASSWORD in .env}
+    volumes:
+      - reposilite-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  # 4 つの OpenAPI 仕様を 1 画面で見る。入口の /swagger/ から（ログイン後に）開く
+  swagger-ui:
+    image: swaggerapi/swagger-ui:v5.33.2
+    environment:
+      BASE_URL: /swagger
+      URLS: >-
+        [{"url":"/swagger/specs/bff.yaml","name":"BFF（画面向け。Try it out 可）"},
+         {"url":"/swagger/specs/api.yaml","name":"API（内部。参照のみ）"},
+         {"url":"/swagger/specs/authz.yaml","name":"認可 API（内部。参照のみ）"},
+         {"url":"/swagger/specs/auth.yaml","name":"認証 API（内部。参照のみ）"}]
+      URLS_PRIMARY_NAME: BFF（画面向け。Try it out 可）
+    volumes:
+      - ./web/openapi/bff.yaml:/usr/share/nginx/html/specs/bff.yaml:ro
+      - ./api/openapi/api.yaml:/usr/share/nginx/html/specs/api.yaml:ro
+      - ./authz/openapi/authz.yaml:/usr/share/nginx/html/specs/authz.yaml:ro
+      - ./auth/openapi/auth.yaml:/usr/share/nginx/html/specs/auth.yaml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/swagger/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+# BFF のビルドで Maven リポジトリの資格情報が要る環境（CI の GitHub Packages など）向け。ローカルの Reposilite は匿名で取得できる
+secrets:
+  maven_repo_user:
+    environment: MAVEN_REPO_USER
+  maven_repo_password:
+    environment: MAVEN_REPO_PASSWORD
+
+volumes:
+  db-data:
+  reposilite-data:

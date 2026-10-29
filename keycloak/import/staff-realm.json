@@ -1,0 +1,75 @@
+{
+  "realm": "staff",
+  "displayName": "fullstack-lab 社員ログイン（Okta の代替）",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "accessTokenLifespan": 300,
+  "groups": [
+    { "name": "task-viewer" },
+    { "name": "task-admin" }
+  ],
+  "clients": [
+    {
+      "clientId": "fullstack-lab-staff",
+      "name": "fullstack-lab (staff)",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${STAFF_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["${STAFF_APP_URL}/oauth2/callback"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "${STAFF_APP_URL}/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "fullstack-lab-staff",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        },
+        {
+          "name": "groups (Okta 互換)",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "carol",
+      "enabled": true,
+      "email": "carol@corp.example.com",
+      "emailVerified": true,
+      "firstName": "Carol",
+      "lastName": "Support",
+      "groups": ["/task-viewer"],
+      "credentials": [{ "type": "password", "value": "${LOCAL_TEST_USER_PASSWORD}", "temporary": false }]
+    },
+    {
+      "username": "dave",
+      "enabled": true,
+      "email": "dave@corp.example.com",
+      "emailVerified": true,
+      "firstName": "Dave",
+      "lastName": "Admin",
+      "groups": ["/task-admin"],
+      "credentials": [{ "type": "password", "value": "${LOCAL_TEST_USER_PASSWORD}", "temporary": false }]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  compose-smoke:
+    name: Docker Compose で全サービスを起動してスモークテスト
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: ローカル用の設定
+        run: |
+          cp .env.example .env
+          echo "127.0.0.1 admin.localhost" | sudo tee -a /etc/hosts
+      - name: クライアントを生成してローカルの Maven リポジトリ（Reposilite）へ publish
+        run: ./scripts/publish-clients.sh
+      - name: 起動（全サービスのヘルスチェックを待つ）
+        run: docker compose up -d --build --wait
+      - name: スモークテスト
+        run: ./scripts/smoke-test.sh
+      - name: API テスト（Karate。API と認可 API）
+        run: ./scripts/api-test.sh
+      - name: 画面の E2E テスト（Playwright）
+        run: ./scripts/e2e-test.sh
+      - name: 状態とログ（失敗時）
+        if: failure()
+        run: |
+          docker compose ps
+          docker compose logs --no-color --tail=200
+      - name: 停止
+        if: always()
+        run: docker compose down -v
