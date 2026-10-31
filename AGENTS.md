@@ -27,7 +27,7 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 
 ## 図解ページを書く・直す
 
-人が読む図解（`references/architecture-notes`。HTML、SVG、`assets/notes.css`、README、`index.html`）を作る・直すときは、必ずスキル `writing-architecture-notes` を使います。読者は「新しくチームに入った人」と「まだスキルの無い人」で、ページの決まりは [references/architecture-notes/README.md の「ページの書き方」](references/architecture-notes/README.md#ページの書き方) にあります。変更はそのリポジトリでブランチを切って PR を出し、集約リポジトリでは参照先のコミットを進める PR を別に出します。
+人が読む図解（`references/architecture-notes`。HTML、SVG、`assets/notes.css`、README、`index.html`）を作る・直すときは、必ずスキル `writing-architecture-notes` を使います（本体は `references/architecture-notes/.agents/skills/` にあり、ルートのスキルはその入口です）。読者は「新しくチームに入った人」と「まだスキルの無い人」で、ページの決まりは [references/architecture-notes/README.md の「ページの書き方」](references/architecture-notes/README.md#ページの書き方) にあります。変更はそのリポジトリでブランチを切って PR を出し、集約リポジトリでは参照先のコミットを進める PR を別に出します。
 
 ## 絶対厳守
 
