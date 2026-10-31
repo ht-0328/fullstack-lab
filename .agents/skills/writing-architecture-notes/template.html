@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!-- TODO: このページが何を図解するかを 1〜2 行で。
+     見た目は ../assets/notes.css（共通）。外部に依存するのは Google Fonts だけで、読めなくても代替フォントで表示できる。 -->
+<title>fullstack-lab <!-- TODO: 題名 --></title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Shippori+Mincho+B1:wght@700&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="../assets/notes.css">
+<style>
+/* このページだけの装飾。共通の見た目は ../assets/notes.css */
+</style>
+</head>
+<body>
+
+<!-- アイコンの定義。図と本文から <use href="#i-…"> で参照する。
+     Font Awesome Free 6.7.2（solid）: TODO（使うものの名前）
+       https://fontawesome.com — License https://fontawesome.com/license/free（Icons: CC BY 4.0）Copyright 2024 Fonticons, Inc.
+     Simple Icons 16.36.0: TODO
+       https://simpleicons.org — CC0 1.0。ロゴの扱いは各ブランドのガイドラインに従う -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <!-- TODO: <symbol id="i-xxx" viewBox="0 0 512 512"><path d="…"/></symbol> -->
+</svg>
+
+<div class="wrap">
+<!-- 視点の切り替えが要るページだけ残す。要らなければ .bar ごと消し、末尾の <script> も消す -->
+<div class="bar"><div class="bar-in">
+  <span class="label">誰としてたどるか（図と表の値が切り替わる）</span>
+  <div class="persona" role="group" aria-label="利用者の切り替え">
+    <button type="button" data-persona="c" aria-pressed="true"><span class="dot"></span>一般利用者</button>
+    <button type="button" data-persona="s" aria-pressed="false"><span class="dot"></span>社員</button>
+  </div>
+</div></div>
+
+<h1>fullstack-lab <!-- TODO: 題名 --></h1>
+<p class="lead"><!-- TODO: 3 文以内。何を、どの設定から読み取ったか。最初の 2 節で何が分かるか --></p>
+
+<div class="howto" aria-label="この資料の読み方">
+  <div class="lv l1"><b>層 1 ・ ぱっと見</b><span>5 分。01 と 02。<!-- TODO: ここだけで分かること --></span></div>
+  <div class="lv l2"><b>層 2 ・ 流れを追う</b><span><!-- TODO: 何分。どの節。何が分かるか --></span></div>
+  <div class="lv l3"><b>層 3 ・ 設定と根拠</b><span>設定を触る人向け。<!-- TODO: どの節 -->。折りたたんであるので開いて読む</span></div>
+</div>
+
+<nav class="toc" aria-label="目次">
+  <div class="group"><span class="lt l1">層 1 ・ ぱっと見</span><ol>
+    <li><span class="no">01</span><a href="#conclusion"><!-- TODO: 結論 --></a></li>
+    <li><span class="no">02</span><a href="#cast">登場人物と、まず覚える言葉</a></li>
+  </ol></div>
+  <div class="group"><span class="lt l2">層 2 ・ 流れを追う</span><ol>
+    <li><span class="no">03</span><a href="#flow-1"><!-- TODO --></a></li>
+  </ol></div>
+  <div class="group"><span class="lt l3">層 3 ・ 設定と根拠</span><ol>
+    <li><span class="no">04</span><a href="#settings"><!-- TODO --></a></li>
+    <li><span class="no">05</span><a href="#read">確かめ方と読む場所</a></li>
+  </ol></div>
+</nav>
+
+<div class="layer-head l1"><span class="tag">層 1</span><span class="name">ぱっと見</span><small><!-- TODO: ここだけで分かること --></small></div>
+
+<!-- ======================================================================= -->
+<h2 id="conclusion"><span class="no">01</span><!-- TODO: 結論を言い切る見出し --></h2>
+<p><!-- TODO: 3 行以内 --></p>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 960 240" role="img" aria-label="TODO: 図の内容を文で" class="arch">
+  <!-- TODO: 登場人物は 7 つまで。文字は 12px 以上（t12 / t13）。色は意味（c s k jwt z au ok ng） -->
+</svg>
+</div>
+<figcaption><!-- TODO: この図で分かることを 1〜2 文 --></figcaption>
+</figure>
+
+<!-- ======================================================================= -->
+<h2 id="cast"><span class="no">02</span>登場人物と、まず覚える言葉</h2>
+<p><!-- TODO: 誰が何をする役か。3 文以内 --></p>
+<ul class="legend" aria-label="図中のアイコンの意味">
+  <li><svg class="ic" aria-hidden="true"><use href="#i-TODO"/></svg><!-- TODO: 名前（役割） --></li>
+</ul>
+
+<h3>まず覚える言葉（<!-- TODO: n --> つ）</h3>
+<ul class="glossary">
+  <li><b><!-- TODO: 言葉 --></b><span><!-- TODO: 一言。専門用語を使わずに --></span></li>
+</ul>
+
+<div class="layer-head l2"><span class="tag">層 2</span><span class="name">流れを追う</span><small><!-- TODO --></small></div>
+
+<!-- ======================================================================= -->
+<h2 id="flow-1"><span class="no">03</span><!-- TODO --></h2>
+<p><!-- TODO: 何の流れか。3 文以内 --></p>
+<ol class="strip">
+  <li><b><!-- TODO: コマ 1 --></b><!-- TODO: 一言 --></li>
+  <li><b><!-- TODO: コマ 2 --></b><!-- TODO --></li>
+  <li><b><!-- TODO: コマ 3 --></b><!-- TODO --></li>
+</ol>
+
+<figure>
+<div class="fig-scroll">
+<svg viewBox="0 0 1120 400" role="img" aria-label="TODO" class="seq">
+  <!-- TODO: シーケンス図。参加者の箱（pbox）にアイコンと名前、縦線（life）、矢印（msg / msg ret）、ラベル（msglabel） -->
+</svg>
+</div>
+<figcaption><!-- TODO --></figcaption>
+</figure>
+
+<details class="deep"><summary><!-- TODO: n --> ステップの説明を開く <small>図の番号と対応</small></summary>
+<ol class="steps">
+  <li><span class="num">①</span><span><!-- TODO --></span></li>
+</ol>
+</details>
+
+<div class="layer-head l3"><span class="tag">層 3</span><span class="name">設定と根拠</span><small>設定を触るときに開く</small></div>
+
+<!-- ======================================================================= -->
+<h2 id="settings"><span class="no">04</span><!-- TODO --></h2>
+<p><!-- TODO: 1 文 --></p>
+<details class="deep"><summary><!-- TODO: 何を開くか --></summary>
+<div class="tbl-wrap"><table>
+<thead><tr><th>項目</th><th>何か</th><th>このリポジトリでは</th></tr></thead>
+<tbody>
+<tr><td class="k"><!-- TODO --></td><td><!-- TODO --></td><td><code><!-- TODO: 実際の値 --></code></td></tr>
+</tbody></table></div>
+</details>
+
+<!-- ======================================================================= -->
+<h2 id="read"><span class="no">05</span>確かめ方と読む場所</h2>
+<details class="deep"><summary>コマンドと、元になったファイルを開く</summary>
+<div class="two">
+<div>
+<h3>動かして見る</h3>
+<pre><code><!-- TODO: コマンド --></code></pre>
+</div>
+<div>
+<h3>この図の元になったファイル（fullstack-lab 内）</h3>
+<ul class="plain files">
+  <li><code><!-- TODO: パス --></code>: <!-- TODO: 何が書いてあるか --></li>
+</ul>
+</div>
+</div>
+</details>
+
+<footer>この図は <!-- TODO: YYYY-MM-DD --> 時点の <a href="https://github.com/ht-0328/fullstack-lab">fullstack-lab</a> の <!-- TODO: 何 --> から読み取ったものです。正は <!-- TODO: 設計書・設定 --> で、それを変えたときはこの図も合わせて直します。</footer>
+</div>
+
+<script>
+(function () {
+  var KEY = 'fsl-TODO-persona';
+  var cur = 'c';
+  try { var saved = localStorage.getItem(KEY); if (saved === 'c' || saved === 's') cur = saved; } catch (e) {}
+  function apply(p) {
+    cur = p;
+    document.documentElement.setAttribute('data-persona', p);
+    var attr = p === 'c' ? 'data-c' : 'data-s';
+    var els = document.querySelectorAll('[data-c]');
+    for (var i = 0; i < els.length; i++) { var v = els[i].getAttribute(attr); if (v !== null) els[i].textContent = v; }
+    var btns = document.querySelectorAll('.persona button');
+    for (var j = 0; j < btns.length; j++) btns[j].setAttribute('aria-pressed', btns[j].getAttribute('data-persona') === p ? 'true' : 'false');
+    try { localStorage.setItem(KEY, p); } catch (e) {}
+  }
+  var buttons = document.querySelectorAll('.persona button');
+  for (var k = 0; k < buttons.length; k++) buttons[k].addEventListener('click', function (ev) { apply(ev.currentTarget.getAttribute('data-persona')); });
+  apply(cur);
+})();
+</script>
+
+</body>
+</html>
