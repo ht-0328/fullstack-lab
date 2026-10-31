@@ -102,6 +102,21 @@ check "外部 500 でも詳細は 200 で UNAVAILABLE になる" 200 '"dueDateIn
 create_task "期限日=遅延スタブのタスクを登録できる" 201 "$ALICE" "$CUSTOMER_URL" '{"title":"smoke: 遅延","dueDate":"2099-01-01"}'
 check "外部の遅延はタイムアウトして UNAVAILABLE になる" 200 '"dueDateInfoStatus":"UNAVAILABLE"' -b "$ALICE" "$CUSTOMER_URL/bff/tasks/$CREATED_ID"
 
+echo "[タスクの完了（設計書 0004）: BFF → 認可 API → API → DB]"
+create_task "完了にするタスクを登録する" 201 "$ALICE" "$CUSTOMER_URL" '{"title":"smoke: 完了"}'
+done_task=$CREATED_ID
+check "詳細で本人には完了ボタンの出し分けが true で返る" 200 '"canComplete":true' -b "$ALICE" "$CUSTOMER_URL/bff/tasks/$done_task"
+check "他の一般利用者は完了にできない（403）" 403 "許可されていません" -b "$BOB" -X POST "$CUSTOMER_URL/bff/tasks/$done_task/complete"
+check "task-viewer の社員は完了にできない（403）" 403 "許可されていません" -b "$CAROL" -X POST "$STAFF_URL/bff/tasks/$done_task/complete"
+check "本人は完了にできる（完了後はボタンを出さない）" 200 '"canComplete":false' -b "$ALICE" -X POST "$CUSTOMER_URL/bff/tasks/$done_task/complete"
+completed_at=$(sed -nE 's/.*"completedAt":"([^"]+)".*/\1/p' <<<"$LAST_BODY")
+check "もう一度完了にしても 200 で、完了日時は変わらない（冪等）" 200 "\"completedAt\":\"$completed_at\"" \
+  -b "$ALICE" -X POST "$CUSTOMER_URL/bff/tasks/$done_task/complete"
+check "一覧にも完了日時が載る（完了したタスクを隠さない）" 200 "\"completedAt\":\"$completed_at\"" -b "$ALICE" "$CUSTOMER_URL/bff/tasks"
+create_task "task-admin が完了にするタスクを登録する" 201 "$ALICE" "$CUSTOMER_URL" '{"title":"smoke: 管理者が完了"}'
+check "task-admin の社員は他人のタスクも完了にできる" 200 '"completedAt":"' -b "$DAVE" -X POST "$STAFF_URL/bff/tasks/$CREATED_ID/complete"
+check "存在しないタスクの完了は 404" 404 "" -b "$ALICE" -X POST "$CUSTOMER_URL/bff/tasks/999999999/complete"
+
 echo "[会員登録とパスワード変更: 公開パス → BFF → 認証 API → Keycloak]"
 NEW_USER="smoke-$(date +%s)@example.com"
 signup_json() { printf '{"email":"%s","familyName":"山田","givenName":"太郎","password":"%s"}' "$1" "$2"; }
@@ -131,6 +146,7 @@ echo "[画面: ブラウザ → Nginx → Nuxt(SSR) → BFF]"
 check "マイページの一覧が SSR で描画される" 200 "smoke: alice の祝日タスク" -b "$ALICE" "$CUSTOMER_URL/"
 check "管理画面の一覧が SSR で描画される" 200 "すべてのタスク" -b "$CAROL" "$STAFF_URL/"
 check "詳細画面が SSR で補足情報まで描画される" 200 "休日（文化の日）" -b "$ALICE" "$CUSTOMER_URL/tasks/$alice_task"
+check "完了したタスクの詳細画面が SSR で完了日時まで描画される" 200 "完了（" -b "$ALICE" "$CUSTOMER_URL/tasks/$done_task"
 
 echo "[OpenAPI 仕様（Swagger UI）]"
 check "未認証では Swagger UI もログインへリダイレクトされる" 302 "" "$CUSTOMER_URL/swagger/"
