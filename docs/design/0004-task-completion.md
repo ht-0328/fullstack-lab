@@ -41,7 +41,7 @@
 | DB | `tasks.completed_at timestamptz null`（V3） | null なら未完了 |
 | API | `POST /api/tasks/{id}/completion` → 200 `Task`。`Task` に `completedAt`（nullable）を追加。既に完了しているタスクには何もせず、現状の `Task` を 200 で返す（冪等。`completedAt` は最初の値のまま） | 完了日時を記録する |
 | 認可 API | 操作 `task:complete`。一般利用者は所有者のみ、社員は `task-admin` のみ | 可否の判定 |
-| BFF | `POST /bff/tasks/{id}/complete` → 200 `TaskDetailView`。`TaskSummaryView` / `TaskDetailView` に `completedAt` を追加。`Capabilities` に `canCompleteTask` は持たせず、詳細に `canComplete` を返す | 認可 → API → 画面向け DTO |
+| BFF | `POST /bff/tasks/{id}/complete` → 200 `TaskDetailView`。所有者を知るために先に API からタスクを取得し（無ければ 404）、認可 API に `task:complete` を問い合わせ、許可されたときだけ API の完了を呼ぶ。`TaskSummaryView` / `TaskDetailView` に `completedAt` を追加。`Capabilities` に `canCompleteTask` は持たせず、詳細に `canComplete` を返す（完了済みなら認可 API に聞かず false） | 取得 → 認可 → API → 画面向け DTO |
 | 画面 | 詳細に「完了にする」ボタン（`canComplete` のとき）と完了日時。一覧は全件を出し、完了したタスクに完了の印を付ける（既定で隠さない） | 操作と表示 |
 
 ### 影響するリポジトリ
@@ -83,7 +83,7 @@ authz:
 | `authz` の `PolicyTest`、Karate | 上の表のとおりに判定する |
 | `api` の Karate | 完了で `completedAt` が入る。既に完了しているタスクへの再実行は 200 で `completedAt` が変わらない。存在しない ID は 404 |
 | `web/bff` の `TaskViewServiceTest` | 拒否なら API を呼ばない。`canComplete` が認可結果と一致する |
-| Playwright | 本人が完了にでき、一覧に印が出る。`task-viewer` にはボタンが出ず、直接呼んでも 403 |
+| Playwright | 本人が完了にでき、一覧に印が出る。完了済みにはボタンが出ない。`task-viewer` にはボタンが出ず、直接呼んでも 403。`task-admin` は他人のタスクも完了にできる |
 | スモークテスト | 完了の経路（Nginx → BFF → 認可 API → API → DB） |
 
 ## 比較した代替案とトレードオフ
@@ -100,7 +100,8 @@ authz:
 
 | 失敗条件 | 検知方法 | システムの動作 | 利用者への影響 |
 |---|---|---|---|
-| 権限のない利用者が完了を呼ぶ | 認可 API が拒否 | BFF は 403。API は呼ばない | 「この操作は許可されていません」 |
+| 権限のない利用者が完了を呼ぶ | 認可 API が拒否 | BFF は 403。完了の API（`POST /api/tasks/{id}/completion`）は呼ばない（所有者を知るための `GET` は認可の前に呼ぶ） | 「この操作は許可されていません」 |
+| 存在しないタスクを完了にする | API の `GET` が 404 | BFF も 404 | 「タスクが見つかりません」 |
 | 既に完了しているタスクを完了にする | API が `completed_at` の有無を見る | 何もせず、現状の `Task` を 200 で返す（冪等）。`completedAt` は最初の値のまま | 成功と同じ表示。二重クリックや再送でエラーにならない |
 | 認可 API が応答しない | BFF の `AuthzClient` | 503（既存どおり fail-closed） | 完了できない |
 
@@ -126,7 +127,11 @@ authz:
 
 ### 性能と可用性、可観測性
 
-変わらない。該当しない。
+| 観点 | 内容 |
+|---|---|
+| 性能 | 詳細の表示で認可 API を 2 回呼ぶ（`task:read` と、`canComplete` のための `task:complete`）。学習用の規模（数百件、少人数）では問題にしない |
+
+可用性と可観測性は変わらない。
 
 ### 展開と後始末
 
