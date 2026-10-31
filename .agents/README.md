@@ -14,3 +14,4 @@ AI コーディングエージェント向けの設定を置くディレクト�
 | [updating-openapi-contract](skills/updating-openapi-contract/SKILL.md) | `openapi/*.yaml` を変える（提供側の生成・publish と、利用側の追従） |
 | [implementing-from-design](skills/implementing-from-design/SKILL.md) | 設計書に沿って実装し、テストし、PR を出す |
 | [pr-and-commit](skills/pr-and-commit/SKILL.md) | コミット、PR 本文、CI、マージ、サブモジュールの更新 |
+| [writing-architecture-notes](skills/writing-architecture-notes/SKILL.md) | `references/architecture-notes` の図解ページ（人が読む HTML）を作る、または直す |

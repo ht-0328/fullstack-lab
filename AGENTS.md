@@ -25,6 +25,10 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 
 ドキュメントの書き方は、既存の設計書と ADR を型にします。設計書は直近のもの（[docs/design/0005-auth-api-and-signup.md](docs/design/0005-auth-api-and-signup.md)）、ADR は [docs/adr/ADR-0003-commit-generated-code.md](docs/adr/ADR-0003-commit-generated-code.md) と同じ節構成で書きます。
 
+## 図解ページを書く・直す
+
+人が読む図解（`references/architecture-notes`。HTML、SVG、`assets/notes.css`、README、`index.html`）を作る・直すときは、必ずスキル `writing-architecture-notes` を使います。読者は「新しくチームに入った人」と「まだスキルの無い人」で、ページの決まりは [references/architecture-notes/README.md の「ページの書き方」](references/architecture-notes/README.md#ページの書き方) にあります。変更はそのリポジトリでブランチを切って PR を出し、集約リポジトリでは参照先のコミットを進める PR を別に出します。
+
 ## 絶対厳守
 
 - **日本語で書く**: 回答、コミットメッセージ、PR 本文、コードコメント、ドキュメントは日本語で書きます（技術用語は英語のままで構いません）。
