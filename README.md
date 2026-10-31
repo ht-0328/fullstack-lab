@@ -242,7 +242,7 @@ fullstack-lab/
 
 ## 開発の流れ
 
-- 機能の追加・変更は、[docs/design/](docs/design/README.md) に設計書を書いてから実装します。設計書は既存の設計書（直近は 0005）と同じ節構成で書きます。AI に任せるときは、スキル `writing-design-doc` → `implementing-from-design` → `pr-and-commit` の順に使い、最後にエージェント `design-review` で設計書と実装のずれを確かめます（[AGENTS.md](AGENTS.md)）。[0005 認証 API と会員登録](docs/design/0005-auth-api-and-signup.md) はこの流れで実装した例、[0004 タスクの完了](docs/design/0004-task-completion.md) は未実装の設計書で、この流れを試す題材です
+- 機能の追加・変更は、[docs/design/](docs/design/README.md) に設計書を書いてから実装します。設計書は既存の設計書（直近は 0005）と同じ節構成で書きます。AI に任せるときは、スキル `writing-design-doc` → `implementing-from-design` → `pr-and-commit` の順に使い、最後にエージェント `design-review` で設計書と実装のずれを確かめます（[AGENTS.md](AGENTS.md)）。[0005 認証 API と会員登録](docs/design/0005-auth-api-and-signup.md) と [0004 タスクの完了](docs/design/0004-task-completion.md) はこの流れで実装した例です
 - 変更は各リポジトリでブランチを切り、PR を出して CI が通ってから main に取り込みます（main は直接 push できない設定です）。PR の本文は [.github/pull_request_template.md](.github/pull_request_template.md) に沿って書きます
 - サブモジュールを更新したら、このリポジトリでも参照先のコミットを進める PR を出します
 - CI の役割
