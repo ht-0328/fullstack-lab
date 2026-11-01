@@ -94,3 +94,6 @@
 
 | 文書 | 回数 | 残した指摘 | 日付 |
 |---|---|---|---|
+| [docs/adr/README.md](../adr/README.md) | 2 | 0 | 2026-11-02 |
+| [docs/review/README.md](README.md) | 2 | 0 | 2026-11-02 |
+| [docs/design/README.md](../design/README.md) | 2 | 0 | 2026-11-02 |
