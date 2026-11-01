@@ -16,6 +16,8 @@
 
 BFF（画面専用のサーバー側 API）が API と認可 API を呼ぶクライアント（契約から生成した、リクエストを組み立てて送るコード）を、どのリポジトリで生成し、どう受け渡すかを決める。このリポジトリは、作成者が以前いた職場（業務環境）の構成を学習用に再現している（[用語](../architecture/README.md#用語)）。[設計書 0003](../design/0003-contracts-and-repositories.md) では、画面 + BFF、API、認可 API の 3 つの領域（独立したリポジトリで作る単位）をそれぞれ別のリポジトリにし、領域同士を OpenAPI の契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`）だけでつなぐことにした。そのため、BFF が API と認可 API のソースを見ずにクライアントを手に入れる方法を、リポジトリを分けるのと同時に決める必要があった。
 
+認証 API（`auth`）は、あとから[設計書 0005](../design/0005-auth-api-and-signup.md) で 4 つ目の領域として加わり、同じ方針で `auth-client` を配布している。この ADR に出てくる領域の数（3 つ）と提供側（API と認可 API）は、採用した 2026-10-28 時点の構成を指す。
+
 次の表は、決定の前提になる課題、制約、分かっている事実と、学習用に置いた仮定を分けて示す。表の中の提供側は契約を定義して公開する側（API と認可 API）、利用側はそれを呼ぶ側（BFF）を指す。
 
 | 項目 | 内容 |
@@ -35,7 +37,7 @@ BFF（画面専用のサーバー側 API）が API と認可 API を呼ぶクラ
 
 | 項目 | 内容 |
 |---|---|
-| 適用対象 | `com.example.fullstacklab:api-client`、`authz-client` |
+| 適用対象 | `com.example.fullstacklab:api-client`、`authz-client`（2026-10-28 から）。`auth-client` も 2026-10-30 から同じ方針で配布している（[設計書 0005](../design/0005-auth-api-and-signup.md)） |
 | 適用開始日 | 2026-10-28 |
 | 対象外 | 画面（Nuxt）が BFF を呼ぶクライアント。型だけを生成し、成果物として配布しない（[ADR-0001](ADR-0001-nuxt-generates-types-only.md)） |
 | 配布先 | ローカルは Reposilite（Compose の中で動かす Maven リポジトリ。`http://localhost:8081`）、CI は GitHub Packages（GitHub が提供するパッケージリポジトリ。`GITHUB_TOKEN` で取得する）、AWS は CodeArtifact。CodeArtifact への置き換えはフェーズ 6 の予定である（[ロードマップの「CodeArtifact が担当すること」](../roadmap/README.md#codeartifact-が担当すること)） |
@@ -72,4 +74,5 @@ BFF（画面専用のサーバー側 API）が API と認可 API を呼ぶクラ
 
 | 案 | 利点 | 採らなかった理由 |
 |---|---|---|
+| BFF が API と認可 API のソースを直接参照する（同じリポジトリに置く、または git submodule で取り込む） | publish の仕組みもバージョンの指定も要らず、提供側の変更がすぐ利用側に届く | 提供側の内部の変更が利用側に漏れ、利用側がどのバージョンの契約に追従しているかも追えない。領域同士を契約だけでつなぐという[設計書 0003](../design/0003-contracts-and-repositories.md) の方針に反するため |
 | BFF 側で API の仕様からクライアントを生成する | publish の仕組みが要らない | BFF が API の仕様ファイルを参照する経路が要り、どの版の契約に追従するかの管理が BFF 任せになる。また、このリポジトリでは成果物を配布する流れを学ぶことを優先した |
