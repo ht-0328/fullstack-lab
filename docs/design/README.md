@@ -10,17 +10,24 @@
 | 想定読者（宛先） | 機能を追加・変更する開発者（人と AI） |
 | この文書を読んだあと読者ができること | 設計書の置き場所と流れが分かり、既存の設計書を探せる |
 
-機能の追加・変更は、ここに設計書を書いてから実装します。書き方は [TEMPLATE.md](TEMPLATE.md) の節構成にし（例は直近の [0005](0005-auth-api-and-signup.md)）、AI に書かせるときはスキル `writing-design-doc` を使います。設計書と ADR の使い分けは [../README.md](../README.md#設計書と-adr-の使い分け) にあります。
+この文書は、設計書の索引です。設計書は、機能の追加・変更を実装する前に、何をどう作るかを決める文書で、変更 1 件につき 1 本をこのフォルダに置きます。設計書と ADR（Architecture Decision Record。方針とその理由の記録。[ADR の索引](../adr/README.md)）の使い分けは、[docs の「設計書と ADR の使い分け」](../README.md#設計書と-adr-の使い分け)にあります。
 
-## 流れ
+設計書は[テンプレート](TEMPLATE.md)の節構成で書き、例には直近の [0005 認証 API と会員登録](0005-auth-api-and-signup.md)を使います。AI に書かせるときは、スキル [writing-design-doc](../../.agents/skills/writing-design-doc/SKILL.md)（AI エージェント向けの手順書。一覧は [AGENTS.md](../../AGENTS.md) の表）を使います。
 
-1. **設計書を書く**（`writing-design-doc`）。未決事項はユーザーに質問として出す
-2. 未決事項がなくなったら状態を「承認」にする
-3. **実装する**（`implementing-from-design`）。設計書の「実装の段取り」の順に進め、契約を変えるなら `updating-openapi-contract` の順序で
-4. PR を出す（`pr-and-commit`）。マージ後、設計書に「実装 PR」を追記し、状態を「実装済み」にする。[../architecture/](../architecture/README.md) を今の状態に合わせる
-5. `design-review` エージェントで設計書と実装のずれを確かめる
+## 設計書を書いてから実装するまでの流れ
+
+設計書を書いてから実装に反映するまでの順番と、各段で行うことは、[docs の「書く順番」](../README.md#書く順番)の 2〜5 にあります。次の表は、その各段で AI に使わせるスキルとエージェント（評価だけを返すサブエージェント。[用語](../architecture/README.md#用語)）を示します。「契約」は、リポジトリ同士の API の取り決め（各リポジトリの `openapi/*.yaml`）です。
+
+| 書く順番 | 段 | スキル・エージェント |
+|---|---|---|
+| 2 | 設計書を書き、未決事項が無くなったら状態を「承認」にする | スキル `writing-design-doc` |
+| 3 | 書いた設計書を評価し、要修正が 0 件になるまで直す | スキル `writing-docs`、エージェント `doc-review` |
+| 4 | 設計書の「実装の段取り」に沿って実装し、PR を出す。契約を変えるなら、`updating-openapi-contract` の順序に従う | スキル `implementing-from-design`、`updating-openapi-contract`、`pr-and-commit` |
+| 5 | マージ後、設計書に「実装 PR」を書いて状態を「実装済み」にし、設計と実装のずれを確かめる | エージェント `design-review` |
 
 ## 索引
+
+次の表は、これまでに書いた設計書を番号順に並べ、状態と影響するリポジトリを示します。「集約」は、集約リポジトリ（このリポジトリ fullstack-lab）を指します。
 
 | 番号 | 題名 | 状態 | 影響するリポジトリ |
 |---|---|---|---|
@@ -30,10 +37,12 @@
 | [0004](0004-task-completion.md) | タスクの完了 | 実装済み | web, api, authz, 集約 |
 | [0005](0005-auth-api-and-signup.md) | 認証 API と会員登録（独立リポジトリの認証 API、Keycloak のユーザー管理、公開パス） | 実装済み | auth（新規）, authz, web, 集約 |
 
-状態: 提案 → 承認 → 実装済み。廃止した設計書は索引に残し、状態を「廃止」にして理由を書きます。
+状態は「提案」から始まり、未決事項が無くなったら「承認」、実装の PR がマージされたら「実装済み」に進みます。廃止した設計書も索引から消さず、状態を「廃止」にして理由を書きます。過去にどんな案があり、なぜやめたかを辿れるようにするためです。
 
 ## 関連
 
-- 構成全体と仮定: [../architecture/](../architecture/README.md)
-- 文書の種類と置き場所、設計書と ADR の使い分け: [../README.md](../README.md)
-- 決定の記録（ADR）: [../adr/](../adr/README.md)
+次の文書は、設計書を書く・探すときに合わせて開くものです。
+
+- 構成全体と仮定: [architecture](../architecture/README.md)
+- 文書の種類と置き場所、書く順番、設計書と ADR の使い分け: [docs の README](../README.md)
+- 決定の記録: [ADR の索引](../adr/README.md)
