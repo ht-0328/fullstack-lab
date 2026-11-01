@@ -1,9 +1,9 @@
 # ADR-NNNN <題名>
 
-> 書くこと: このファイルを `docs/adr/ADR-NNNN-<slug>.md` に複製する。番号は [README.md](README.md) の索引の次の番号。題名は決定そのものを言い切る。`> 書くこと:` と `> 例:` の行は、自分の文に置き換えて消す。決まりは [../README.md](../README.md) の「書き方」（W-1〜W-10）と「共通の決まり」。例は [ADR-0001](ADR-0001-nuxt-generates-types-only.md) から取っている。
+> 書くこと: このファイルを `docs/adr/ADR-NNNN-<slug>.md` に複製する。番号は [README.md](README.md) の索引の次の番号。題名は決定そのものを言い切る。`> 書くこと:` と `> 例:` の行は、自分の文に置き換えて消す。決まりは [docs の README](../README.md) の「書き方」（W-1〜W-10）と「形式の決まり」（F-1〜F-6）。例は [ADR-0001](ADR-0001-nuxt-generates-types-only.md) から取っている。
 > 例: ADR-0001 画面（Nuxt）は OpenAPI から型だけを生成し、HTTP の層は生成しない
 
-> **状態: 採用。** 廃止したら「廃止（ADR-NNNN で置き換え）」と書き、本文は変えない。
+> **状態: 採用。** 廃止したら「廃止（ADR-NNNN で置き換え）」と書き、決定の中身は変えない（読みやすさの修正は可）。
 
 | 項目 | 内容 |
 |---|---|
