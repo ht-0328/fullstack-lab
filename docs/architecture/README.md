@@ -271,7 +271,9 @@ CodeArtifact は AWS の成果物リポジトリ（ライブラリを登録し�
 
 ### 3. 会員登録（未認証の公開パス）
 
-画面は、ブラウザ → Nginx `/signup`（認証なし）→ Nuxt の順に流れます。画面の静的アセット（`/_nuxt/*`）も、Nginx が認証なしで Nuxt へ転送します。Nuxt は SSR で `/bff/me` を呼びますが 401 が返るので、「未認証」として描画します。登録の送信は、ブラウザ → Nginx `/bff/signup`（認証なし）→ BFF → 認証 API → Keycloak の Admin API の順に流れます。登録後は「ログインする」の導線から、いつものログインの流れに入ります。
+画面は、ブラウザ → Nginx `/signup`（認証なし）→ Nuxt の順に流れます。画面の静的アセット（`/_nuxt/*`）も、Nginx が認証なしで Nuxt へ転送します。Nuxt は SSR で `/bff/me` を呼びますが 401 が返るので、「未認証」として描画します。
+
+登録の送信は、ブラウザ → Nginx `/bff/signup`（認証なし）→ BFF → 認証 API → Keycloak の Admin API の順に流れます。登録後は「ログインする」の導線から、いつものログインの流れに入ります。
 
 公開パスを通るリクエストは認証していないので、Nginx はクライアントが付けてきた `x-amzn-oidc-*` を空にしてから転送します（[public-proxy.conf](../../nginx/snippets/public-proxy.conf)）。
 
