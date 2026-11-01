@@ -16,14 +16,15 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 | 段階 | 使うスキル | 成果物 |
 |---|---|---|
 | 設計書を書く | `writing-design-doc` | `docs/design/NNNN-<slug>.md`（[索引](docs/design/README.md)） |
+| 文書を評価して直す | `writing-docs`（エージェント `doc-review`） | 合格した文書と `docs/review/` の記録 |
 | 契約を変える | `updating-openapi-contract` | `*/openapi/*.yaml` とバージョン |
 | 実装する | `implementing-from-design` | 各リポジトリのコードとテスト |
 | 取り込む | `pr-and-commit` | PR（テンプレートに沿った本文）と CI |
-| 設計と実装のずれを確かめる | エージェント `design-review` | 指摘の一覧 |
+| 設計と実装のずれを確かめる | エージェント `design-review` | 指摘の一覧（`docs/review/` に記録） |
 
 設計書に未決事項が残っているうちは実装を始めません。実装中に設計と違う判断が必要になったら、黙って実装を変えず、設計書を直して差分を報告します。
 
-文書の種類と置き場所、設計書と ADR の使い分けは [docs/README.md](docs/README.md) にあります。設計書は [docs/design/TEMPLATE.md](docs/design/TEMPLATE.md)、ADR は [docs/adr/TEMPLATE.md](docs/adr/TEMPLATE.md) の節構成で書きます。
+文書の種類と置き場所、設計書と ADR の使い分けは [docs/README.md](docs/README.md) にあります。設計書は [docs/design/TEMPLATE.md](docs/design/TEMPLATE.md)、ADR は [docs/adr/TEMPLATE.md](docs/adr/TEMPLATE.md) の節構成で書きます。書いた文書は `writing-docs` の手順で `doc-review` に評価させ、合格させてから PR を出します。
 
 ## 図解ページを書く・直す
 

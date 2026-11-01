@@ -30,3 +30,5 @@ tools: Read, Grep, Glob, Bash
 |---|---|---|---|---|
 
 最後に、不一致と未実装を優先度順に並べ、「設計書を直すべきもの」と「実装を直すべきもの」に分けて提案します。判断がつかないものは質問として挙げます。
+
+呼び出し側は、この表を `docs/review/docs-design-NNNN-<slug>.md` の「design-review」の節に記録します（[docs/review/README.md](../../docs/review/README.md)）。

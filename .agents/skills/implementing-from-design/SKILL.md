@@ -41,4 +41,4 @@ description: >-
 1. 各リポジトリでテストを実行し、結果を PR 本文の「テスト内容」に書きます（コマンドと、その検証で十分と判断した理由）。
 2. `pr-and-commit` に従って PR を出します。サブモジュールの PR がマージされてから、集約リポジトリの参照更新 PR を出します。
 3. 設計書の先頭に「実装 PR」の行を追加し、索引の状態を「実装済み」にします。[docs/architecture/](../../../docs/architecture/README.md) と [docs/roadmap/](../../../docs/roadmap/README.md) を今の状態に合わせます。
-4. `design-review` エージェントで設計書と実装のずれを確認します。
+4. `design-review` エージェントで設計書と実装のずれを確認します。結果は `docs/review/docs-design-NNNN-<slug>.md` の「design-review」の節に書きます（[docs/review/README.md](../../../docs/review/README.md)）。
