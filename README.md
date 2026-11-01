@@ -94,6 +94,7 @@ docker compose up -d --build --wait # 2. 全サービスを起動（ヘルスチ
 ./scripts/api-test.sh     # 起動中の API・認可 API・認証 API に対して Karate を実行する
 ./scripts/e2e-test.sh     # 起動中の環境に対して Playwright で画面を操作する（実ブラウザ）
 ./scripts/unit-test.sh    # 各サービスの単体テストと型チェック（Docker の test ステージで実行）
+python3 scripts/doc-lint.py  # docs/ の文書の形式（先頭の表、リンク、段落の文数、用語）を確かめる
 ```
 
 ホストに JDK・Node.js・ブラウザは要りません。Karate は JRE + 実行ファイルのイメージ、Playwright は公式イメージで動かします。
@@ -193,11 +194,11 @@ fullstack-lab/
 ├── nginx/                       # 入口のプロキシ（ALB の代替）。conf.d がホスト別の server、snippets が共通部分
 ├── keycloak/import/             # realm staff の定義（Okta の代替）。realm customer は auth/keycloak/import にある
 ├── scripts/                     # 生成、publish、スモークテスト、Karate、Playwright、単体テスト
-├── docs/                        # 文書。architecture/ 構成、design/ 設計書、adr/ 決定の記録、roadmap/ 計画（置き場所の決まりは docs/README.md）
+├── docs/                        # 文書。architecture/ 構成、design/ 設計書、adr/ 決定の記録、roadmap/ 計画、review/ 評価の記録（決まりは docs/README.md）
 ├── references/architecture-notes/  (submodule)  # 仕組みの図解（人が読む HTML。設計書の正は docs/）
 ├── AGENTS.md / CLAUDE.md        # AI エージェント向けのルール（CLAUDE.md は AGENTS.md を取り込むだけ）
-├── .agents/skills/              # スキル（設計書、契約変更、実装、PR）。.claude/skills はここへのリンク
-├── .claude/agents/              # エージェント定義（design-review）
+├── .agents/skills/              # スキル（設計書、文書の評価、契約変更、実装、PR）。.claude/skills はここへのリンク
+├── .claude/agents/              # エージェント定義（design-review、doc-review）
 ├── .github/                     # PR テンプレートと CI（Compose でのスモークテスト、Karate、Playwright）
 ├── web/      (submodule)        # 画面 + BFF
 │   ├── openapi/bff.yaml
