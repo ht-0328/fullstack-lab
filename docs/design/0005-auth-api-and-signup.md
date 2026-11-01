@@ -81,7 +81,7 @@
 ```yaml
 paths:
   /auth/v1/customers:
-    post:   # 201 CustomerAccount / 400 / 409（メールアドレス重複）
+    post:   # 201 CustomerAccount / 400 / 409（メールアドレス重複）/ 503（Keycloak に到達できない）
   /auth/v1/customers/{id}:
     get:    # 200 CustomerAccount / 404
   /auth/v1/customers/{id}/password:
