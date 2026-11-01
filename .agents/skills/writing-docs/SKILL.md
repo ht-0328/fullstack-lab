@@ -17,7 +17,7 @@ description: >-
 ## 2. 評価する
 
 1. `doc-review` エージェントに、対象の文書のパスを渡して評価させます。エージェントの定義は [.claude/agents/doc-review.md](../../../.claude/agents/doc-review.md) です。エージェントとして起動できない環境では、その定義を読んで同じ手順で評価します。
-2. 結果を [docs/review/](../../../docs/review/README.md) の記録に書きます。ファイル名と形は docs/review/README.md のとおりです。記録が無ければ作り、あれば「回ごとの結果」に 1 行足します。
+2. 結果を [docs/review/](../../../docs/review/README.md) の記録に書きます。ファイル名と形は docs/review/README.md のとおりです。記録が無ければ作り、あれば「回ごとの結果」に 1 行足し、その回の要修正を「指摘の一覧」に 1 行ずつ（回、決まり、場所、直したか）足します。
 
 ## 3. 直す
 
