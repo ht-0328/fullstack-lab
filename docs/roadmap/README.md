@@ -123,7 +123,7 @@ Nginx を AWS でどこに置くかは、2026-11-01 に作成者がパターン 
 |---|---|---|
 | Actions（GitHub ホストのランナー） | PR の検査（テスト、型チェック、スモークテスト）、ワークフロー全体の制御、dev 環境へのデプロイ前の承認（GitHub の Environments 機能。指定した人が承認するまでジョブを止める） | AWS の権限が要らず、無料枠で動く |
 | Actions + OIDC | ECS へのデプロイ（タスク定義の更新、サービスの更新） | 長期のアクセスキーを持たずに、一時的な認証情報で AWS を操作できる |
-| CodeBuild | デプロイするイメージのビルドと ECR への push、VPC 内での処理（RDS に対するマイグレーションなど） | CodeArtifact や VPC 内のリソースに IAM ロールで直接アクセスできる。ビルドの記録が AWS 側に残る |
+| CodeBuild | デプロイするイメージのビルドと ECR への push、生成クライアントの CodeArtifact への publish（「CodeArtifact が担当すること」の 1）、VPC 内での処理（RDS に対するマイグレーションなど） | CodeArtifact や VPC 内のリソースに IAM ロールで直接アクセスできる。ビルドの記録が AWS 側に残る |
 
 CodeBuild の呼び出し方は、次の 2 通りがあります。どちらにするかはフェーズ 6 で決めます。
 
