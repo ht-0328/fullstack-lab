@@ -40,7 +40,7 @@
 | 前提 | ログインは引き続き前段（アプリより手前で認証とセッションを担う層。ローカルは oauth2-proxy、AWS では ALB の認証アクション。ALB は AWS のロードバランサー）が Keycloak のログイン画面へ誘導する | 設計書 [0002](0002-authentication-authorization.md) |
 | 前提 | BFF（JWT を検証し、認可 API と API を呼ぶ）が受け取る JWT（IdP が署名して発行するトークン）の `sub`（利用者を一意に示すクレーム）は Keycloak のユーザー ID（本文では利用者 ID と呼ぶ）である | Keycloak は、発行するトークンの `sub` にユーザー ID を入れる |
 | 仮定 | 認証 API の責務は「Keycloak のユーザー管理の代行」（登録、プロフィール参照、パスワード変更）とし、ログインは担当しない | 業務環境の認証 API が何を担っていたかは記録が無く、確かめられない。前段の認証と重ならない範囲に絞る。[構成の仮定 12](../architecture/README.md#仮定) |
-| 仮定 | Keycloak の設定のうち、realm `customer`（一般利用者）は `auth` リポジトリに、realm `staff`（Okta の代替）は集約リポジトリに置く | 業務環境で Keycloak の設定をどう分けていたかは不明。「認証 API の中に Keycloak があった」という事実に合わせ、業務環境に無い realm `staff` は集約リポジトリに残す。[構成の仮定 14](../architecture/README.md#仮定) |
+| 仮定 | Keycloak の設定のうち、realm（Keycloak の中で、利用者とクライアントをまとめる区画）`customer`（一般利用者）は `auth` リポジトリに、realm `staff`（Okta の代替）は集約リポジトリに置く | 業務環境で Keycloak の設定をどう分けていたかは不明。「認証 API の中に Keycloak があった」という事実に合わせ、業務環境に無い realm `staff` は集約リポジトリに残す。[構成の仮定 14](../architecture/README.md#仮定) |
 | 仮定 | 認証 API は内部ネットワーク専用で、BFF を信頼し、自分では呼び出し元を認証・認可しない | 業務環境の認証 API がどう守られていたかは不明。API と同じ扱い（[構成の仮定 7](../architecture/README.md#仮定)）にそろえる。認証 API に広げるのはこの変更だけの判断で、構成の仮定には載せない |
 | 仮定 | 会員登録の画面と API は未認証で到達できる公開パスとし、入口（すべてのリクエストを最初に受けて振り分けるもの。ローカルは Nginx、AWS では ALB）が認証なしで転送する | ALB ではリスナールール単位で認証アクションを付けないことができる。[構成の仮定 13](../architecture/README.md#仮定) |
 | 仮定 | メールアドレスの確認（確認メール）は行わない | ローカルにメール送信の仕組みが無い。登録時に `emailVerified = true` で作る。業務環境でどうしていたかは不明で、この変更だけの判断として構成の仮定には載せない |
@@ -53,7 +53,7 @@
 
 | 要素 | 採用内容 | 責務 |
 |---|---|---|
-| リポジトリ `auth` | Kotlin + Spring Boot。`api` / `authz` と同じ構成にする。契約からコードを生成して git で管理し（[ADR-0003 OpenAPI から生成したコードは git で管理する](../adr/ADR-0003-commit-generated-code.md)）、成果物 `auth-client`（契約から生成したクライアントのライブラリ）を publish し、Karate（API のテスト）を `compose.test.yaml` で実行する | 認証 API と、Keycloak の realm（利用者とクライアントをまとめる区画）`customer` の定義（`auth/keycloak/import/customer-realm.json`） |
+| リポジトリ `auth` | Kotlin + Spring Boot。`api` / `authz` と同じ構成にする。契約からコードを生成して git で管理し（[ADR-0003 OpenAPI から生成したコードは git で管理する](../adr/ADR-0003-commit-generated-code.md)）、成果物 `auth-client`（契約から生成したクライアントのライブラリ）を publish し、Karate（API のテスト）を `compose.test.yaml` で実行する | 認証 API と、Keycloak の realm`customer` の定義（`auth/keycloak/import/customer-realm.json`） |
 | 認証 API | `POST /auth/v1/customers`（登録）、`GET /auth/v1/customers/{id}`（参照）、`PUT /auth/v1/customers/{id}/password`（変更） | Keycloak の Admin API を呼び、入力の検証とエラーの変換（409 / 403 / 404）を行う。内部ネットワーク専用で、BFF を信頼する（「制約と前提」の仮定） |
 | Keycloak のクライアント `auth-api` | 機密クライアント（シークレットを持つ OAuth クライアント）にする。サービスアカウント（利用者を介さずに自分の権限でトークンを得る仕組み）を有効にし、`realm-management` のロール `manage-users`、`view-users`、`view-realm`（ロール ID の取得に使う）を付ける。現在のパスワードの確認に使うため、Direct Access Grants（ID とパスワードを直接送ってトークンを得るフロー）も有効にする | 認証 API だけが使う。シークレットは `AUTH_API_CLIENT_SECRET` |
 | realm `staff` | 集約リポジトリに残す（`keycloak/import/staff-realm.json`）。Okta の代替であり、業務環境には存在しない学習用の設定 | 社員のログイン（Okta の代替）。認証 API は関与しない |
