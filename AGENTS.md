@@ -50,6 +50,7 @@ docker compose up -d --build --wait   # 起動
 ./scripts/smoke-test.sh               # 主要な経路（認証・認可・画面・外部連携）
 ./scripts/api-test.sh                 # Karate（API と認可 API）
 ./scripts/e2e-test.sh                 # Playwright（画面）
+python3 scripts/doc-lint.py           # docs/ の文書を変えたとき（先頭の表、リンク、段落の文数、用語）
 ```
 
 サブモジュール単体でも検証できます（各リポジトリの README を参照）。結果は PR 本文の「テスト内容」に、実行したコマンドと、その検証で十分と判断した理由を書きます。

@@ -94,6 +94,7 @@ docker compose up -d --build --wait # 2. 全サービスを起動（ヘルスチ
 ./scripts/api-test.sh     # 起動中の API・認可 API・認証 API に対して Karate を実行する
 ./scripts/e2e-test.sh     # 起動中の環境に対して Playwright で画面を操作する（実ブラウザ）
 ./scripts/unit-test.sh    # 各サービスの単体テストと型チェック（Docker の test ステージで実行）
+python3 scripts/doc-lint.py  # docs/ の文書の形式（先頭の表、リンク、段落の文数、用語）を確かめる
 ```
 
 ホストに JDK・Node.js・ブラウザは要りません。Karate は JRE + 実行ファイルのイメージ、Playwright は公式イメージで動かします。
