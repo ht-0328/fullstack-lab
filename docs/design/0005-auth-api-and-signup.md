@@ -31,7 +31,7 @@
 | 制約 | 領域同士は契約（OpenAPI）と publish された成果物だけでつなぐ | [0003](0003-contracts-and-repositories.md) |
 | 前提 | ログインは引き続き前段（ローカル: oauth2-proxy、AWS: ALB）が Keycloak のログイン画面へ誘導する | [0002](0002-authentication-authorization.md)。認証 API はログインに関与しない |
 | 前提 | BFF が受け取る JWT の `sub` は Keycloak のユーザー ID である | Keycloak の仕様 |
-| 仮定 | 認証 API の責務は「Keycloak のユーザー管理の代行」（登録、プロフィール参照、パスワード変更）とする | 業務の認証 API の責務は利用者も覚えていない（2026-10-28）。[architecture.md の仮定 12](../architecture.md#仮定) |
+| 仮定 | 認証 API の責務は「Keycloak のユーザー管理の代行」（登録、プロフィール参照、パスワード変更）とする | 業務の認証 API の責務は利用者も覚えていない（2026-10-28）。[構成の仮定 12](../architecture/README.md#仮定) |
 | 仮定 | 会員登録の画面と API は未認証で到達できる公開パスとし、入口（ALB / Nginx）が認証なしで転送する | ALB ではリスナールール単位で認証アクションを付けないことができる |
 | 仮定 | メールアドレスの確認（確認メール）は行わない | ローカルにメール送信の仕組みが無い。登録時に `emailVerified = true` で作る |
 
@@ -52,7 +52,7 @@
 | 要素 | 採用内容 | 責務 |
 |---|---|---|
 | リポジトリ `auth` | Kotlin + Spring Boot。`api` / `authz` と同じ構成（契約から生成、クライアントを publish、Karate を `compose.test.yaml` で実行） | 認証 API と、Keycloak の realm `customer` の定義（`auth/keycloak/import/customer-realm.json`） |
-| 認証 API | `POST /auth/v1/customers`（登録）、`GET /auth/v1/customers/{id}`（参照）、`PUT /auth/v1/customers/{id}/password`（変更） | Keycloak の Admin API を呼び、入力の検証とエラーの変換（409 / 403 / 404）を行う。内部ネットワーク専用で、BFF を信頼する（API と同じ。[仮定 7](../architecture.md#仮定)） |
+| 認証 API | `POST /auth/v1/customers`（登録）、`GET /auth/v1/customers/{id}`（参照）、`PUT /auth/v1/customers/{id}/password`（変更） | Keycloak の Admin API を呼び、入力の検証とエラーの変換（409 / 403 / 404）を行う。内部ネットワーク専用で、BFF を信頼する（API と同じ。[仮定 7](../architecture/README.md#仮定)） |
 | Keycloak のクライアント `auth-api` | 機密クライアント。サービスアカウント（`realm-management` の `manage-users` と `view-users`）と、現在のパスワードの確認に使う Direct Access Grants を有効にする | 認証 API だけが使う。シークレットは `AUTH_API_CLIENT_SECRET` |
 | realm `staff` | 集約リポジトリに残す（`keycloak/import/staff-realm.json`） | Okta の代替であり、業務環境には存在しない学習用の設定。認証 API は関与しない |
 | BFF | `POST /bff/signup`（未認証で呼べる）、`PUT /bff/me/password`（認証済み。`sub` を利用者 ID にして認証 API を呼ぶ）、`GET /bff/me` の `capabilities.canChangePassword` | 認証 API のクライアント（`auth-client`）を使う。パスワード変更の前に認可 API へ `account:change-password` を問い合わせる |
@@ -138,7 +138,7 @@ components:
 
 ## 技術観点の確認
 
-該当しない観点は行ごと削り、該当しない理由を 1 行書いている（テンプレートの O-07）。
+該当しない観点は行ごと削り、該当しない理由を 1 行書いている（[docs の決まり](../README.md#共通の決まり)）。
 
 ### セキュリティと権限
 

@@ -10,14 +10,14 @@
 | 想定読者（宛先） | 機能を追加・変更する開発者（人と AI） |
 | この文書を読んだあと読者ができること | 設計書の置き場所と流れが分かり、既存の設計書を探せる |
 
-機能の追加・変更は、ここに設計書を書いてから実装します。書き方は既存の設計書（直近は [0005](0005-auth-api-and-signup.md)）と同じ節構成にし、AI に書かせるときはスキル `writing-design-doc` を使います。
+機能の追加・変更は、ここに設計書を書いてから実装します。書き方は [TEMPLATE.md](TEMPLATE.md) の節構成にし（例は直近の [0005](0005-auth-api-and-signup.md)）、AI に書かせるときはスキル `writing-design-doc` を使います。設計書と ADR の使い分けは [../README.md](../README.md#設計書と-adr-の使い分け) にあります。
 
 ## 流れ
 
 1. **設計書を書く**（`writing-design-doc`）。未決事項はユーザーに質問として出す
 2. 未決事項がなくなったら状態を「承認」にする
-3. **実装する**（`implementing-from-design`）。契約を変えるなら `updating-openapi-contract` の順序で
-4. PR を出す（`pr-and-commit`）。マージ後、設計書に「実装 PR」を追記し、状態を「実装済み」にする
+3. **実装する**（`implementing-from-design`）。設計書の「実装の段取り」の順に進め、契約を変えるなら `updating-openapi-contract` の順序で
+4. PR を出す（`pr-and-commit`）。マージ後、設計書に「実装 PR」を追記し、状態を「実装済み」にする。[../architecture/](../architecture/README.md) を今の状態に合わせる
 5. `design-review` エージェントで設計書と実装のずれを確かめる
 
 ## 索引
@@ -34,5 +34,6 @@
 
 ## 関連
 
-- 構成全体と仮定: [../architecture.md](../architecture.md)
-- 決定の記録（ADR）: [../adr/](../adr/)
+- 構成全体と仮定: [../architecture/](../architecture/README.md)
+- 文書の種類と置き場所、設計書と ADR の使い分け: [../README.md](../README.md)
+- 決定の記録（ADR）: [../adr/](../adr/README.md)

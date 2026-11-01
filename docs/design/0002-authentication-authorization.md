@@ -32,7 +32,7 @@
 | 制約 | Okta はローカルで動かない。代替手段が要る | SaaS |
 | 前提 | 社員は Okta、一般利用者（マイページ）は Keycloak で認証していた | 業務環境の事実（利用者の説明） |
 | 前提 | トークンは JWT で、BFF が認可 API を呼んでいた | 業務環境の事実（利用者の説明） |
-| 仮定 | ALB はホスト名ごとに IdP を分け、BFF は ALB が転送する IdP のアクセストークンを検証する | [architecture.md の仮定 2・3](../architecture.md#仮定) |
+| 仮定 | ALB はホスト名ごとに IdP を分け、BFF は ALB が転送する IdP のアクセストークンを検証する | [構成の仮定 2・3](../architecture/README.md#仮定) |
 
 ## 採用案
 
@@ -82,7 +82,7 @@
 
 ## 技術観点の確認
 
-該当しない観点は行ごと削り、該当しない理由を 1 行書いている（テンプレートの O-07）。
+該当しない観点は行ごと削り、該当しない理由を 1 行書いている（[docs の決まり](../README.md#共通の決まり)）。
 
 ### セキュリティと権限
 
@@ -115,7 +115,7 @@
 |---|---|
 | 展開手順 | realm の変更は `docker compose up -d --force-recreate keycloak` |
 | 互換性 | ヘッダー名は ALB と同じ（`x-amzn-oidc-accesstoken` など）。AWS 化でアプリ側は変えない |
-| ローカルと AWS の差分 | [aws-roadmap.md「ALB の認証」](../aws-roadmap.md#alb-の認証) |
+| ローカルと AWS の差分 | [ロードマップ「ALB の認証」](../roadmap/README.md#alb-の認証) |
 
 ## 未決事項
 
