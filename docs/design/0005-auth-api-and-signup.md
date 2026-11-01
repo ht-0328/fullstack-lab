@@ -8,22 +8,24 @@
 | 作成者 | ht-0328（Claude Code で作成） |
 | 機密区分 | 公開可 |
 | 保守責任者 | ht-0328 |
-| 最終確認日 | 2026-10-30 |
+| 最終確認日 | 2026-11-02 |
 | 実装 PR | fullstack-lab-auth#1、fullstack-lab-authz#3、fullstack-lab-web#4、fullstack-lab#6（設計書は fullstack-lab#4） |
 | 想定読者（宛先） | 認証 API を実装する開発者（人と AI）、構成をレビューする人 |
 | この文書を読んだあと読者ができること | 認証 API の責務と境界、会員登録・パスワード変更の経路、影響するリポジトリと順序を説明できる |
 
 ## 解決する課題
 
-業務環境（作成者が以前いた職場。このリポジトリはその構成を学習用に再現している。[用語](../architecture/README.md#用語)）には、独立したリポジトリの「認証 API」があり、その中に Keycloak（一般利用者の IdP。ID とパスワードを確かめてトークンを発行する）があった。このリポジトリにはまだ認証 API が無く、利用者はテストユーザー（alice / bob）だけで、増やすには Keycloak の管理コンソールを使うしかない。この設計書は、認証 API をリポジトリ `auth` として足し、一般利用者が会員登録とパスワード変更を画面から行えるようにする。社員（Okta で認証する）のアカウントは扱わない。
+業務環境（作成者が以前いた職場。このリポジトリはその構成を学習用に再現している。[用語](../architecture/README.md#用語)）には、独立したリポジトリの「認証 API」があった。その認証 API の中に、Keycloak（一般利用者の IdP。ID とパスワードを確かめてトークンを発行する）があった。このリポジトリにはまだ認証 API が無く、利用者はテストユーザー（alice / bob）だけで、増やすには Keycloak の管理コンソールを使うしかない。
+
+この設計書は、認証 API をリポジトリ `auth` として足し、一般利用者が会員登録とパスワード変更を画面から行えるようにする。社員（Okta で認証する）のアカウントは扱わない。
 
 次の表は、この変更の対象と規模、何ができれば完了かをまとめる。
 
 | 項目 | 内容 |
 |---|---|
 | 対象 | 一般利用者（マイページ）のアカウント管理。社員（Okta で認証する。Okta は外部の SaaS で、アカウントはアプリの外で管理する）は対象外 |
-| 発生規模 | リポジトリ 1 つの追加。全体を束ねる集約リポジトリ（このリポジトリ fullstack-lab）1 つと、画面 + BFF、API、認可 API、認証 API の領域（独立したリポジトリで作る単位）4 つになる。領域同士をつなぐ契約（OpenAPI の仕様）は、1 つを追加し、1 つを互換のまま変更する |
-| 読者への影響 | 今はテストユーザー（alice / bob）しかおらず、利用者を増やすには Keycloak の管理コンソールを使うしかない |
+| 発生規模 | リポジトリ 1 つの追加。全体を束ねる集約リポジトリ（このリポジトリ fullstack-lab）1 つと、画面 + BFF（画面専用のサーバー側 API。[用語](../architecture/README.md#用語)）、API（タスクの API）、認可 API（操作の可否を判定する API）、認証 API の領域（独立したリポジトリで作る単位）4 つになる。変えるリポジトリは、新規の `auth` と、`authz`、`web`、集約リポジトリの 4 つ。領域同士をつなぐ契約（OpenAPI の仕様）は、1 つを追加し、1 つを互換のまま変更する |
+| 利用者への影響 | 一般利用者は自分でアカウントを作れず、パスワードも変えられない。テストユーザー（alice / bob）以外で試すには、開発者が Keycloak の管理コンソールで利用者を作る必要がある |
 | 成功条件 | 未認証で会員登録画面を開いて登録し、そのままログインしてタスクを登録できる。ログイン後にパスワードを変え、新しいパスワードでログインし直せる。既存の認証（設計書 [0002](0002-authentication-authorization.md)）の経路は変わらない |
 
 ## 制約と前提
@@ -32,12 +34,14 @@
 
 | 区分 | 内容 | 根拠 |
 |---|---|---|
-| 制約 | 認証 API は独立したリポジトリで、Keycloak（の設定）をその中に持つ | 業務環境の事実（2026-10-28 の聞き取り） |
+| 制約 | 認証 API は独立したリポジトリにし、Keycloak をその中に置く | 業務環境の事実（[architecture/ の「業務環境について聞いている事実」](../architecture/README.md#業務環境について聞いている事実)。作成者 ht-0328 が 2026-10-28 に確かめた） |
 | 制約 | 社員のアカウントは扱わない | Okta は外部の SaaS で、アカウント管理はアプリの外にある |
-| 制約 | 領域同士は契約（OpenAPI）と、契約から生成して publish（Maven リポジトリに登録して配布）した成果物だけでつなぐ | 設計書 [0003](0003-contracts-and-repositories.md) |
-| 前提 | ログインは引き続き前段（アプリより手前で認証とセッションを担う層。ローカルは oauth2-proxy、AWS では ALB の認証アクション。ALB は AWS のロードバランサー）が Keycloak のログイン画面へ誘導する | 設計書 [0002](0002-authentication-authorization.md)。認証 API はログインを担当しないとする（[構成の仮定 12](../architecture/README.md#仮定)） |
-| 前提 | BFF（画面専用のサーバー側 API。JWT を検証し、認可 API と API を呼ぶ）が受け取る JWT（IdP が署名して発行するトークン）の `sub`（利用者を一意に示すクレーム）は Keycloak のユーザー ID（本文では利用者 ID と呼ぶ）である | Keycloak の仕様 |
+| 制約 | 領域同士は契約（OpenAPI）と、契約から生成して publish（Maven リポジトリに登録して配布）した成果物だけでつなぐ | 設計書 [0003](0003-contracts-and-repositories.md)、[ADR-0002 領域間のクライアントは成果物（Maven）として配布し、ソースを共有しない](../adr/ADR-0002-distribute-clients-as-artifacts.md) |
+| 前提 | ログインは引き続き前段（アプリより手前で認証とセッションを担う層。ローカルは oauth2-proxy、AWS では ALB の認証アクション。ALB は AWS のロードバランサー）が Keycloak のログイン画面へ誘導する | 設計書 [0002](0002-authentication-authorization.md) |
+| 前提 | BFF（JWT を検証し、認可 API と API を呼ぶ）が受け取る JWT（IdP が署名して発行するトークン）の `sub`（利用者を一意に示すクレーム）は Keycloak のユーザー ID（本文では利用者 ID と呼ぶ）である | Keycloak は、発行するトークンの `sub` にユーザー ID を入れる |
 | 仮定 | 認証 API の責務は「Keycloak のユーザー管理の代行」（登録、プロフィール参照、パスワード変更）とし、ログインは担当しない | 業務環境の認証 API が何を担っていたかは記録が無く、確かめられない。前段の認証と重ならない範囲に絞る。[構成の仮定 12](../architecture/README.md#仮定) |
+| 仮定 | Keycloak の設定のうち、realm `customer`（一般利用者）は `auth` リポジトリに、realm `staff`（Okta の代替）は集約リポジトリに置く | 業務環境で Keycloak の設定をどう分けていたかは不明。「認証 API の中に Keycloak があった」という事実に合わせ、業務環境に無い realm `staff` は集約リポジトリに残す。[構成の仮定 14](../architecture/README.md#仮定) |
+| 仮定 | 認証 API は内部ネットワーク専用で、BFF を信頼し、自分では呼び出し元を認証・認可しない | 業務環境の認証 API がどう守られていたかは不明。API と同じ扱い（[構成の仮定 7](../architecture/README.md#仮定)）にそろえる。認証 API に広げるのはこの変更だけの判断で、構成の仮定には載せない |
 | 仮定 | 会員登録の画面と API は未認証で到達できる公開パスとし、入口（すべてのリクエストを最初に受けて振り分けるもの。ローカルは Nginx、AWS では ALB）が認証なしで転送する | ALB ではリスナールール単位で認証アクションを付けないことができる。[構成の仮定 13](../architecture/README.md#仮定) |
 | 仮定 | メールアドレスの確認（確認メール）は行わない | ローカルにメール送信の仕組みが無い。登録時に `emailVerified = true` で作る。業務環境でどうしていたかは不明で、この変更だけの判断として構成の仮定には載せない |
 
@@ -49,12 +53,12 @@
 
 | 要素 | 採用内容 | 責務 |
 |---|---|---|
-| リポジトリ `auth` | Kotlin + Spring Boot。`api` / `authz` と同じ構成にする（契約から生成し、クライアントを publish し、Karate（API のテスト）を `compose.test.yaml` で実行する） | 認証 API と、Keycloak の realm（利用者とクライアントをまとめる区画）`customer` の定義（`auth/keycloak/import/customer-realm.json`） |
-| 認証 API | `POST /auth/v1/customers`（登録）、`GET /auth/v1/customers/{id}`（参照）、`PUT /auth/v1/customers/{id}/password`（変更） | Keycloak の Admin API を呼び、入力の検証とエラーの変換（409 / 403 / 404）を行う。内部ネットワーク専用で、BFF を信頼する（API と同じ。[構成の仮定 7](../architecture/README.md#仮定)） |
-| Keycloak のクライアント `auth-api` | 機密クライアント（シークレットを持つ OAuth クライアント）。サービスアカウント（利用者を介さずに自分の権限でトークンを得る仕組み。`realm-management` の `manage-users`、`view-users`、ロール ID の取得に使う `view-realm`）と、現在のパスワードの確認に使う Direct Access Grants（ID とパスワードを直接送ってトークンを得るフロー）を有効にする | 認証 API だけが使う。シークレットは `AUTH_API_CLIENT_SECRET` |
-| realm `staff` | 集約リポジトリに残す（`keycloak/import/staff-realm.json`）。Okta の代替であり、業務環境には存在しない学習用の設定（[構成の仮定 14](../architecture/README.md#仮定)） | 社員のログイン（Okta の代替）。認証 API は関与しない |
-| BFF | `POST /bff/signup`（未認証で呼べる）、`PUT /bff/me/password`（認証済み。`sub` を利用者 ID にして認証 API を呼ぶ）、`GET /bff/me` の `capabilities.canChangePassword` | 認証 API のクライアント（`auth-client`）を使う。パスワード変更の前に認可 API へ `account:change-password` を問い合わせる |
-| 認可 API | `customer-actions` に `account:change-password` を追加 | 一般利用者は自分のアカウントにだけ許可。社員はどのロールにも付与しないので拒否（Okta 側で管理するため） |
+| リポジトリ `auth` | Kotlin + Spring Boot。`api` / `authz` と同じ構成にする。契約からコードを生成して git で管理し（[ADR-0003 OpenAPI から生成したコードは git で管理する](../adr/ADR-0003-commit-generated-code.md)）、成果物 `auth-client`（契約から生成したクライアントのライブラリ）を publish し、Karate（API のテスト）を `compose.test.yaml` で実行する | 認証 API と、Keycloak の realm（利用者とクライアントをまとめる区画）`customer` の定義（`auth/keycloak/import/customer-realm.json`） |
+| 認証 API | `POST /auth/v1/customers`（登録）、`GET /auth/v1/customers/{id}`（参照）、`PUT /auth/v1/customers/{id}/password`（変更） | Keycloak の Admin API を呼び、入力の検証とエラーの変換（409 / 403 / 404）を行う。内部ネットワーク専用で、BFF を信頼する（「制約と前提」の仮定） |
+| Keycloak のクライアント `auth-api` | 機密クライアント（シークレットを持つ OAuth クライアント）にする。サービスアカウント（利用者を介さずに自分の権限でトークンを得る仕組み）を有効にし、`realm-management` のロール `manage-users`、`view-users`、`view-realm`（ロール ID の取得に使う）を付ける。現在のパスワードの確認に使うため、Direct Access Grants（ID とパスワードを直接送ってトークンを得るフロー）も有効にする | 認証 API だけが使う。シークレットは `AUTH_API_CLIENT_SECRET` |
+| realm `staff` | 集約リポジトリに残す（`keycloak/import/staff-realm.json`）。Okta の代替であり、業務環境には存在しない学習用の設定 | 社員のログイン（Okta の代替）。認証 API は関与しない |
+| BFF | `POST /bff/signup`（未認証で呼べる）、`PUT /bff/me/password`（認証済み。`sub` を利用者 ID にして認証 API を呼ぶ）、`GET /bff/me` の `capabilities.canChangePassword`（画面にパスワード変更の導線を出すかどうか。出し分け用で、守りは BFF と認可 API が担う） | 認証 API の成果物 `auth-client` を使う。パスワード変更の前に認可 API へ `account:change-password` を問い合わせる |
+| 認可 API | `customer-actions`（一般利用者に、自分のリソースに限って許可する操作の一覧）に `account:change-password` を追加 | 一般利用者は自分のアカウントにだけ許可。社員はどのロールにも付与しないので拒否（Okta 側で管理するため） |
 | 画面 | `/signup`（公開。登録後にログインへの導線）、`/me/password`（一般利用者のみ表示） | ブラウザから同一オリジンの `/bff/*` を呼ぶ。SSR（サーバー側描画。画面のフレームワーク Nuxt のサーバーが HTML を組み立てる）では BFF の 401 を「未認証」として扱い、公開ページを描画する |
 | 入口（Nginx） | 一般利用者のホストだけ、`/signup`、`/bff/signup`、`/_nuxt/`（画面の静的アセット。公開ページの描画に必要）を `auth_request`（Nginx が前段に認証の有無を問い合わせる仕組み）なしで転送する。転送時に `X-Amzn-Oidc-*` ヘッダー（認証済みの利用者の ID とトークンを後段に渡すヘッダー。ALB が付けるものと同じ名前）を空にし、利用者が偽のヘッダーを付けて認証済みを装うのを防ぐ。AWS では ALB のリスナールール（パス条件、認証アクションなし）に相当する。社員のホストには公開パスを作らない（設定は `nginx/snippets/public-locations.conf`） | 公開パスの転送と、偽の認証ヘッダーの除去 |
 
@@ -64,10 +68,10 @@
 
 | リポジトリ | 変更 | 変えない理由 |
 |---|---|---|
-| `auth`（新規 `fullstack-lab-auth`） | 認証 API 本体、契約 `openapi/auth.yaml`、クライアント `auth-client`、Keycloak の realm `customer` の定義、Karate | — |
+| `auth`（新規 `fullstack-lab-auth`） | 認証 API 本体、契約 `openapi/auth.yaml`、成果物 `auth-client`、Keycloak の realm `customer` の定義、Karate | — |
 | `authz` | `application.yml` の `customer-actions` に `account:change-password` を追加。Karate に判定を追加 | 契約（`openapi/authz.yaml`）と判定ロジック（`Policy`）は変えない。操作名は自由文字列なので、設定（`application.yml`）に 1 行足せば済むため |
 | `web` | BFF: `auth-client` への依存、`/bff/signup`（公開）と `/bff/me/password`、`Capabilities.canChangePassword`。画面: `/signup` と `/me/password`。Playwright（画面のテスト） | — |
-| 集約 | サブモジュール `auth/` の追加、Compose（`auth` サービス、Keycloak の realm の取り込み元）、Nginx の公開パス、スモークテスト、Swagger UI（契約を画面で読み、試せるツール）、スクリプト（`scripts/` の `generate.sh`、`publish-clients.sh`、`unit-test.sh`、`api-test.sh`、`smoke-test.sh` に `auth` を追加）、ドキュメント（README、`docs/architecture/`） | — |
+| 集約 | サブモジュール `auth/` の追加、Compose（`auth` サービス、Keycloak の realm の取り込み元）、Nginx の公開パス、スモークテスト、Swagger UI（契約を画面で読み、試せるツール）、スクリプト（`scripts/` の `generate.sh`、`publish-clients.sh`、`unit-test.sh`、`api-test.sh`、`smoke-test.sh` に `auth` を追加）、ドキュメント（[README](../../README.md)、[architecture/](../architecture/README.md)） | — |
 | `api` | なし | 業務データ（タスク）は変わらない。利用者の識別は引き続き JWT の `sub` |
 
 ### 契約の変更
@@ -109,14 +113,14 @@ components:
 | 操作 | 一般利用者 | 社員 | 備考 |
 |---|---|---|---|
 | 会員登録 | 未認証で可 | 該当しない。社員のアカウントは Okta 側で作るため | 主体（操作する利用者）が無いので認可 API に問い合わせない。乱用対策（レート制限、CAPTCHA）は含めない（「課題・申し送り事項」参照） |
-| `account:change-password` | 自分のアカウントのみ許可 | 拒否 | `authz/src/main/resources/application.yml` の `customer-actions` に追加。`staff-role-permissions` には追加しない |
+| `account:change-password` | 自分のアカウントのみ許可 | 拒否 | `authz/src/main/resources/application.yml` の `customer-actions` に追加。`staff-role-permissions`（社員のロールごとに許可する操作）には追加しない |
 
 ### リクエストの流れ（会員登録）
 
-次の手順は、未認証の利用者が会員登録してからログインするまでに、要求がどの順でどこを通るかを示す。
+次の手順は、未認証の利用者が会員登録してからログインするまでに、リクエストがどの順でどこを通るかを示す。
 
-1. ブラウザの要求が、入口（Nginx）の `/signup`（認証なし）→ Nuxt（SSR）の順に流れる。`app.vue` の `/bff/me` は 401 になるので、画面は「未認証」として描画する
-2. ブラウザの要求が、入口（Nginx）の `/bff/signup`（認証なし）→ BFF → 認証 API `POST /auth/v1/customers` → Keycloak の Admin API の順に流れる。Keycloak でユーザー作成、パスワード設定、ロール `customer` の付与を行う
+1. ブラウザのリクエストが、入口（Nginx）の `/signup`（認証なし）→ Nuxt（SSR）の順に流れる。`app.vue`（すべての画面に共通する外枠）が呼ぶ `/bff/me` は 401 になるので、画面は「未認証」として描画する
+2. ブラウザのリクエストが、入口（Nginx）の `/bff/signup`（認証なし）→ BFF → 認証 API `POST /auth/v1/customers` → Keycloak の Admin API の順に流れる。Keycloak でユーザー作成、パスワード設定、ロール `customer` の付与を行う
 3. 画面が「ログインする」への導線（`/oauth2/start?rd=/`）を出し、以降は設計書 [0002](0002-authentication-authorization.md) の流れでログインする
 
 ### テスト
@@ -125,12 +129,12 @@ components:
 
 | 層 | 対象 | 確かめること |
 |---|---|---|
-| 単体（`auth`） | Keycloak の Admin API の呼び出し（Spring の MockRestServiceServer で Keycloak を模擬する） | トークン取得、ユーザー作成とロール付与の順序、409 / 404 / 401 の変換、パスワードをログに出さない |
-| 単体（`web/bff`） | 認証 API と認可 API の呼び出し | 社員の変更要求は認可 API で拒否して認証 API を呼ばない。`sub` を利用者 ID に使う |
-| Karate（`auth`） | 実際の Keycloak を `compose.test.yaml` で立てる | 登録 → 参照 → 重複 409 → パスワード変更（不一致 403、成功 204）→ 新しいパスワードでトークンが取れる。入力エラー 400、未知の ID 404 |
+| 単体（`auth`） | Keycloak の Admin API の呼び出し（Spring の MockRestServiceServer で Keycloak を模擬する） | トークン取得と使い回し、ユーザー作成とロール付与の順序、ロール付与に失敗したときのユーザーの削除。Keycloak の応答（メールアドレスの重複 409、未知の ID 404、現在のパスワードの誤りを示す `invalid_grant`）を、認証 API がそれぞれ 409、404、403 で返す例外に変えること。新しいパスワードを現在のパスワードの確認に送らないこと |
+| 単体（`web/bff`） | 認証 API と認可 API の呼び出し | 社員のパスワード変更のリクエストは認可 API で拒否して認証 API を呼ばない。`sub` を利用者 ID に使う |
+| Karate（`auth`） | 実際の Keycloak を `compose.test.yaml` で立てる | 利用者を登録して参照し、同じメールアドレスでの再登録は 409 になる。パスワード変更は、現在のパスワードが違えば 403、正しければ 204 になり、そのあと新しいパスワードでトークンが取れる。入力エラーは 400、未知の ID は 404 になる |
 | Karate（`authz`） | 判定表 | 一般利用者の `account:change-password`（本人 / 他人）、社員の拒否 |
-| Playwright（`web/e2e`） | 画面 | 登録 → ログイン → タスク登録 → パスワード変更 → ログアウト → 新しいパスワードでログイン。社員にはパスワード変更の導線が出ない |
-| スモーク（集約） | 入口 | 未認証で `/signup` と `/bff/signup` に到達できる。社員のホストでは 302。公開パスに付けた偽の `X-Amzn-Oidc-*` は捨てられる。`/bff/me/password` は未認証で 401 |
+| Playwright（`web/e2e`） | 画面 | 利用者が登録、ログイン、タスク登録、パスワード変更、ログアウトの順に操作し、新しいパスワードでログインし直せる。社員にはパスワード変更の導線が出ない |
+| スモーク（集約） | 入口 | 未認証で `/signup` と `/bff/signup` に到達できる。社員のホストには公開パスが無いので、`/signup` はログインへリダイレクトされる（302）。公開パスに付けた偽の `X-Amzn-Oidc-*` は捨てられる。`/bff/me/password` は未認証で 401 になる |
 
 ## 比較した代替案とトレードオフ
 
@@ -138,7 +142,7 @@ components:
 
 | 案 | 利点 | 欠点 | 採否の理由 |
 |---|---|---|---|
-| 認証 API を独立リポジトリに置き、Keycloak の Admin API の窓口にする（採用） | 業務環境の境界と同じ。アカウント操作の入口が 1 つになり、Keycloak の都合（API の形、エラー）を BFF から隠せる | リポジトリと配布物が増える | 業務環境の事実（認証 API が独立したリポジトリにあった）に合わせる |
+| 認証 API を独立リポジトリに置き、Keycloak の Admin API の窓口にする（採用） | 業務環境の境界と同じ。アカウント操作の入口が 1 つになり、Keycloak の都合（API の形、エラー）を BFF から隠せる | リポジトリと成果物（`auth-client`）が増える | 業務環境の事実（認証 API が独立したリポジトリにあった）に合わせる |
 | Keycloak の登録画面（`registrationAllowed`）とアカウントコンソールを使う | 実装がほぼ不要 | 認証 API の再現にならない。画面の見た目と導線が Keycloak 任せになる | 不採用。業務環境の認証 API を再現することが目的で、Keycloak の画面に任せると再現にならないため |
 | BFF が Keycloak の Admin API を直接呼ぶ | リポジトリが増えない | 認証 API が独立していたという事実に反する。BFF が Keycloak の管理権限を持つ | 不採用。欠点に挙げた 2 点（業務環境の事実に反する、BFF が Keycloak の管理権限を持つ）を避けるため |
 | 認証 API がログイン（ID とパスワードからトークン発行）も担う | 画面でログインを完結できる | 前段（ALB）の認証と二重になり、設計書 [0002](0002-authentication-authorization.md) の経路を作り直すことになる | 不採用。業務環境の認証 API の責務が不明なので、既存の経路を壊さない範囲に絞る |
@@ -157,7 +161,7 @@ components:
 
 ## 技術観点の確認
 
-該当しない観点は行ごと削り、該当しない理由を 1 行書いている（[docs の決まり](../README.md#形式の決まり)）。
+該当しない観点も行を残し、セルに該当しない理由を書いている（[docs の決まり](../README.md#形式の決まり)の F-3）。
 
 ### セキュリティと権限
 
@@ -165,10 +169,10 @@ components:
 
 | 観点 | 内容 |
 |---|---|
-| 認証 | 認証 API は内部ネットワーク専用で、BFF を信頼する（API と同じ扱い）。Keycloak へはクライアント `auth-api` のサービスアカウント（`manage-users`、`view-users`、ロール ID の取得に使う `view-realm`）で接続する。入口（Nginx）は公開パスでも `X-Amzn-Oidc-*` を空に上書きし、BFF は `/bff/signup` 以外を認証必須にする |
+| 認証 | 認証 API は内部ネットワーク専用で、BFF を信頼する（API と同じ扱い）。認証 API は、Keycloak のクライアント `auth-api` のサービスアカウント（`manage-users`、`view-users`、ロール ID の取得に使う `view-realm`）で Keycloak に接続する。入口（Nginx）は公開パスでも `X-Amzn-Oidc-*` を空に上書きし、BFF は `/bff/signup` 以外を認証必須にする |
 | 認可 | 認証 API 自身は認可しない。BFF が利用者 ID に `sub` を使い、他人のアカウントを指定できないようにする。パスワード変更は認可 API に問い合わせる |
 | 秘密情報の保管 | `AUTH_API_CLIENT_SECRET` は `.env`（ローカル）/ Secrets Manager（AWS の秘密情報の保管サービス）に置く。パスワードはログと例外メッセージに出さない |
-| 通信の暗号化 | ローカルは HTTP。AWS では VPC 内の通信（API / 認可 API と同じ） |
+| 通信の暗号化 | ローカルは HTTP。AWS では VPC（AWS の中に作る閉じたネットワーク）内の通信（API / 認可 API と同じ） |
 | 監査ログ | 登録と変更を利用者 ID とリクエスト ID で記録する（メールアドレスとパスワードは出さない） |
 
 ### データ
@@ -184,7 +188,7 @@ components:
 
 ### 性能と可用性
 
-学習用の構成なので、目標値は置かない。可用性については、認証 API は Keycloak の起動を待たずに起動し、Admin API 用のトークンは最初の呼び出し時に取得する。BFF が JWT 検証用の公開鍵を最初の要求時に取る方針と同じである。
+学習用の構成なので、目標値は置かない。可用性については、認証 API は Keycloak の起動を待たずに起動し、Admin API 用のトークンは最初の呼び出し時に取得する。BFF が JWT 検証用の公開鍵を最初のリクエスト時に取る方針と同じである。
 
 ### 可観測性
 
@@ -201,9 +205,9 @@ components:
 
 | 観点 | 内容 |
 |---|---|
-| 展開手順 | `auth`（新規、publish）→ `authz`（設定）→ `web`（契約 1.1.0、`authClientVersion`）→ 集約（サブモジュール、Compose、Nginx）の順に展開する。順序はスキル [pr-and-commit](../../.agents/skills/pr-and-commit/SKILL.md) に従う |
+| 展開手順 | `auth`（新規、publish）→ `authz`（設定）→ `web`（BFF の契約を 1.1.0 にし、`web/bff/gradle.properties` の `authClientVersion`（BFF が依存する `auth-client` のバージョン）を 1.0.0 にする）→ 集約（サブモジュール、Compose、Nginx）の順に展開する。順序はスキル [pr-and-commit](../../.agents/skills/pr-and-commit/SKILL.md) に従う |
 | 切り戻し | 集約リポジトリの参照を前のコミットに戻す。`auth-client` 1.0.0 は残す |
-| 互換性 | `bff.yaml` は追加のみ（互換）。`authz.yaml` は変えない。realm `customer` の定義は置き場所が変わるだけで内容は互換（クライアント `auth-api` の追加のみ） |
+| 互換性 | `bff.yaml` は追加のみ（互換）。`authz.yaml` は変えない。realm `customer` の定義は置き場所が変わるだけで内容は互換（Keycloak のクライアント `auth-api` の追加のみ） |
 | 廃止計画 | なし |
 
 ## 実装の段取り
