@@ -14,9 +14,10 @@ Nuxt、Kotlin + Spring Boot（BFF / 認証 API / 認可 API / API）、PostgreSQ
  Reposilite（Maven リポジトリ :8081）◀── api / authz がクライアントを publish、BFF が取得（CodeArtifact の代替）
 ```
 
-- 構成、役割、リクエストの流れ、仮定 → [docs/architecture.md](docs/architecture.md)
-- 設計書（機能ごと。実装の前に書く）→ [docs/design/](docs/design/README.md)、決定の記録 → [docs/adr/](docs/adr/)
-- AWS と CI/CD の計画、費用の見込み → [docs/aws-roadmap.md](docs/aws-roadmap.md)
+- 文書の種類と置き場所（構成、設計書、ADR、計画）→ [docs/](docs/README.md)
+- 構成、役割、リクエストの流れ、仮定 → [docs/architecture/](docs/architecture/README.md)
+- 設計書（機能ごと。実装の前に書く）→ [docs/design/](docs/design/README.md)、決定の記録 → [docs/adr/](docs/adr/README.md)
+- AWS と CI/CD の計画、費用の見込み → [docs/roadmap/](docs/roadmap/README.md)
 - AI エージェント向けのルールとスキル → [AGENTS.md](AGENTS.md)、[.agents/](.agents/README.md)
 
 ## リポジトリ構成
@@ -162,7 +163,7 @@ docker compose down -v     # データ（ボリューム）も削除する。次
 3. BFF が JWT の署名・`iss`・`aud`・有効期限を検証し、操作の前に認可 API へ問い合わせます。
 4. 一般利用者のアカウントは認証 API（`auth/`）が Keycloak に作ります。会員登録の画面と API だけは認証なしで通します（[public-locations.conf](nginx/snippets/public-locations.conf)）。
 
-詳しくは [docs/architecture.md](docs/architecture.md#認証と認可)、AWS との違いは [docs/aws-roadmap.md](docs/aws-roadmap.md#alb-の認証) にあります。
+詳しくは [docs/architecture/](docs/architecture/README.md#認証と認可)、AWS との違いは [docs/roadmap/](docs/roadmap/README.md#alb-の認証) にあります。
 
 ### 契約（OpenAPI）と生成物
 
@@ -192,7 +193,7 @@ fullstack-lab/
 ├── nginx/                       # 入口のプロキシ（ALB の代替）。conf.d がホスト別の server、snippets が共通部分
 ├── keycloak/import/             # realm staff の定義（Okta の代替）。realm customer は auth/keycloak/import にある
 ├── scripts/                     # 生成、publish、スモークテスト、Karate、Playwright、単体テスト
-├── docs/                        # 構成の説明、設計書（design/）、ADR（adr/）、AWS の計画
+├── docs/                        # 文書。architecture/ 構成、design/ 設計書、adr/ 決定の記録、roadmap/ 計画（置き場所の決まりは docs/README.md）
 ├── references/architecture-notes/  (submodule)  # 仕組みの図解（人が読む HTML。設計書の正は docs/）
 ├── AGENTS.md / CLAUDE.md        # AI エージェント向けのルール（CLAUDE.md は AGENTS.md を取り込むだけ）
 ├── .agents/skills/              # スキル（設計書、契約変更、実装、PR）。.claude/skills はここへのリンク
@@ -242,7 +243,7 @@ fullstack-lab/
 
 ## 開発の流れ
 
-- 機能の追加・変更は、[docs/design/](docs/design/README.md) に設計書を書いてから実装します。設計書は既存の設計書（直近は 0005）と同じ節構成で書きます。AI に任せるときは、スキル `writing-design-doc` → `implementing-from-design` → `pr-and-commit` の順に使い、最後にエージェント `design-review` で設計書と実装のずれを確かめます（[AGENTS.md](AGENTS.md)）。[0005 認証 API と会員登録](docs/design/0005-auth-api-and-signup.md) と [0004 タスクの完了](docs/design/0004-task-completion.md) はこの流れで実装した例です
+- 機能の追加・変更は、[docs/design/](docs/design/README.md) に設計書を書いてから実装します。設計書は [テンプレート](docs/design/TEMPLATE.md) の節構成で書きます。AI に任せるときは、スキル `writing-design-doc` → `implementing-from-design` → `pr-and-commit` の順に使い、最後にエージェント `design-review` で設計書と実装のずれを確かめます（[AGENTS.md](AGENTS.md)）。[0005 認証 API と会員登録](docs/design/0005-auth-api-and-signup.md) と [0004 タスクの完了](docs/design/0004-task-completion.md) はこの流れで実装した例です
 - 変更は各リポジトリでブランチを切り、PR を出して CI が通ってから main に取り込みます（main は直接 push できない設定です）。PR の本文は [.github/pull_request_template.md](.github/pull_request_template.md) に沿って書きます
 - サブモジュールを更新したら、このリポジトリでも参照先のコミットを進める PR を出します
 - CI の役割
@@ -262,7 +263,7 @@ fullstack-lab/
 | Nuxt | 4.6.1 | 4 系で 2 週間以上経った最新のパッチ版 |
 | Node.js | 24（Alpine） | Active LTS。Nuxt 4.6 の要件（^24.15）を満たす |
 | TypeScript / vue-tsc | 5.9.3 / 3.3.13 | `openapi-typescript` 7.13 が TypeScript 5 系を要求するため、6 系ではなく 5 系の最終版にした |
-| openapi-typescript / openapi-fetch | 7.13.0 / 0.17.0 | 型だけを生成し、HTTP の層は fetch に任せる組み合わせ（docs/architecture.md 参照） |
+| openapi-typescript / openapi-fetch | 7.13.0 / 0.17.0 | 型だけを生成し、HTTP の層は fetch に任せる組み合わせ（docs/architecture/ 参照） |
 | PostgreSQL | 17（Alpine） | 安定して長く使われている系列。RDS でも利用できる |
 | Nginx | 1.30（Alpine） | stable 系列 |
 | WireMock | 3.13.2 | 3 系の最新安定版 |

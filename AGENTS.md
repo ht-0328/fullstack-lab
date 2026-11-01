@@ -4,10 +4,10 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 
 ## このリポジトリについて
 
-- 業務環境に近い構成を学習用に再現したタスク管理アプリです。全体像は [README.md](README.md)、構成と仮定は [docs/architecture.md](docs/architecture.md) にあります。
+- 業務環境に近い構成を学習用に再現したタスク管理アプリです。全体像は [README.md](README.md)、構成と仮定は [docs/architecture/](docs/architecture/README.md)、文書の置き場所は [docs/README.md](docs/README.md) にあります。
 - 5 つのリポジトリで構成され、ここは集約リポジトリです。`web/`（画面 + BFF）、`api/`、`authz/`、`auth/`（認証 API と Keycloak の realm `customer`）は git submodule で、それぞれ独立した Git リポジトリです。**サブモジュールの中を変更したら、そのリポジトリでブランチを切り、PR を出します。** 集約リポジトリでは参照先のコミットを進める PR を別に出します。
 - 領域同士は OpenAPI の契約と publish された成果物だけでつながります。他の領域のソースを直接参照するコードは書きません。
-- 業務環境について分かっている事実と、学習用に置いた仮定は [docs/architecture.md の「仮定」](docs/architecture.md#仮定) で分けています。仮定を事実のように書かないでください。
+- 業務環境について分かっている事実と、学習用に置いた仮定は [docs/architecture/ の「仮定」](docs/architecture/README.md#仮定) で分けています。仮定を事実のように書かないでください。
 
 ## 設計書から実装する
 
@@ -23,7 +23,7 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 
 設計書に未決事項が残っているうちは実装を始めません。実装中に設計と違う判断が必要になったら、黙って実装を変えず、設計書を直して差分を報告します。
 
-ドキュメントの書き方は、既存の設計書と ADR を型にします。設計書は直近のもの（[docs/design/0005-auth-api-and-signup.md](docs/design/0005-auth-api-and-signup.md)）、ADR は [docs/adr/ADR-0003-commit-generated-code.md](docs/adr/ADR-0003-commit-generated-code.md) と同じ節構成で書きます。
+文書の種類と置き場所、設計書と ADR の使い分けは [docs/README.md](docs/README.md) にあります。設計書は [docs/design/TEMPLATE.md](docs/design/TEMPLATE.md)、ADR は [docs/adr/TEMPLATE.md](docs/adr/TEMPLATE.md) の節構成で書きます。
 
 ## 図解ページを書く・直す
 

@@ -1,6 +1,16 @@
 # アーキテクチャ
 
-この文書は学習用の構成を説明するものです。機能ごとの設計は [design/](design/README.md)、決定の記録は [adr/](adr/) にあります。業務環境の事実を記したものではありません。業務環境について聞いている事実と、不確かなまま置いた仮定は「[仮定](#仮定)」で分けて示しています。
+| 項目 | 内容 |
+|---|---|
+| 発信日 | 2026-10-30 |
+| 作成者 | ht-0328（Claude Code で作成） |
+| 機密区分 | 公開可 |
+| 保守責任者 | ht-0328 |
+| 最終確認日 | 2026-11-01 |
+| 想定読者（宛先） | 構成を把握したい開発者（人と AI）、新しく参加する人 |
+| この文書を読んだあと読者ができること | 各サービスの役割、認証・認可とリクエストの流れ、業務環境の事実と学習用の仮定の区別を説明できる |
+
+この文書は学習用の構成を説明するものです。機能ごとの設計は [design/](../design/README.md)、決定の記録は [adr/](../adr/README.md)、計画は [roadmap/](../roadmap/README.md) にあります。文書の種類と置き場所は [../README.md](../README.md) にあります。業務環境の事実を記したものではありません。業務環境について聞いている事実と、不確かなまま置いた仮定は「[仮定](#仮定)」で分けて示しています。
 
 ## ローカル環境の構成図
 
@@ -58,7 +68,7 @@ flowchart LR
   AP --> RDS[(RDS for PostgreSQL)]
 ```
 
-ALB は Host ヘッダーごとにリスナールールを分けます。一般利用者向けのホストは Keycloak、管理画面のホストは Okta の `authenticate-oidc` を使い、認証が済んだらどちらも同じ Nginx へ転送します。会員登録の公開パス（`/signup`、`/bff/signup`、`/_nuxt/*`）は、一般利用者向けのホストにだけ認証アクションなしのルールを作ります。Keycloak を AWS 上で自前運用するか、既存のものを使うかは未定です（[aws-roadmap.md](aws-roadmap.md#alb-の認証)）。
+ALB は Host ヘッダーごとにリスナールールを分けます。一般利用者向けのホストは Keycloak、管理画面のホストは Okta の `authenticate-oidc` を使い、認証が済んだらどちらも同じ Nginx へ転送します。会員登録の公開パス（`/signup`、`/bff/signup`、`/_nuxt/*`）は、一般利用者向けのホストにだけ認証アクションなしのルールを作ります。Keycloak を AWS 上で自前運用するか、既存のものを使うかは未定です（[ロードマップの「ALB の認証」](../roadmap/README.md#alb-の認証)）。
 
 ## 各サービスの役割
 
@@ -151,7 +161,7 @@ sequenceDiagram
 | 詳細 | 自分のタスクだけ（他人のものは 404） | 全件 | 全件 |
 | 登録 | できる | できない（403） | できる |
 
-方針は [authz の application.yml](../authz/src/main/resources/application.yml) と [Policy.kt](../authz/src/main/kotlin/com/example/fullstacklab/authz/Policy.kt) にあります。
+方針は [authz の application.yml](../../authz/src/main/resources/application.yml) と [Policy.kt](../../authz/src/main/kotlin/com/example/fullstacklab/authz/Policy.kt) にあります。
 
 ### 設計上のポイント
 
@@ -175,7 +185,7 @@ sequenceDiagram
 | `authz/openapi/authz.yaml` | 同上。`DecisionController` が `DecisionsApi` を実装する | BFF が `authz-client` を取得する |
 | `web/openapi/bff.yaml` | `kotlin-spring` で BFF のインターフェースと DTO。`BffController` が `MeApi` / `TasksApi` を実装する | 画面が `openapi-typescript` で型を生成し、`openapi-fetch` の型付きクライアントで呼ぶ |
 
-生成コードは業務環境と同じく git で管理します。置き場所は Kotlin が各リポジトリの `src/generated`（クライアントは `client/src/generated`）、画面が `frontend/app/types/bff.d.ts` です。仕様を変えたら `scripts/generate.sh` で生成し直し、生成物も同じコミットに含めます。ビルドは生成し直さず、コミットされたコードをそのまま成果物にします。「仕様だけ直して生成し忘れる」「生成コードを手で直す」事故は、各リポジトリの Docker の `check-generated` ステージ（`test` / `typecheck` の前段）が生成し直して差分を取ることで防ぎます。理由と比較は [ADR-0003](adr/ADR-0003-commit-generated-code.md) にあります。
+生成コードは業務環境と同じく git で管理します。置き場所は Kotlin が各リポジトリの `src/generated`（クライアントは `client/src/generated`）、画面が `frontend/app/types/bff.d.ts` です。仕様を変えたら `scripts/generate.sh` で生成し直し、生成物も同じコミットに含めます。ビルドは生成し直さず、コミットされたコードをそのまま成果物にします。「仕様だけ直して生成し忘れる」「生成コードを手で直す」事故は、各リポジトリの Docker の `check-generated` ステージ（`test` / `typecheck` の前段）が生成し直して差分を取ることで防ぎます。理由と比較は [ADR-0003](../adr/ADR-0003-commit-generated-code.md) にあります。
 
 ### 成果物の配布（CodeArtifact の代替）
 
@@ -212,7 +222,7 @@ BFF は API と認可 API の**ソースを参照しません**。それぞれ�
 
 ### 1. 画面の取得（SSR）
 
-ブラウザ → Nginx（`auth_request`）→ Nuxt → `http://bff:8080/bff/*` → 認可 API と API、の順に流れます。SSR の通信は Nginx を通らないので、Nginx が付けた `x-amzn-oidc-accesstoken` と `x-request-id` は、Nuxt が自分で BFF へ引き継ぎます（[useBff.ts](../frontend/app/composables/useBff.ts)）。
+ブラウザ → Nginx（`auth_request`）→ Nuxt → `http://bff:8080/bff/*` → 認可 API と API、の順に流れます。SSR の通信は Nginx を通らないので、Nginx が付けた `x-amzn-oidc-accesstoken` と `x-request-id` は、Nuxt が自分で BFF へ引き継ぎます（[useBff.ts](../../web/frontend/app/composables/useBff.ts)）。
 
 ### 2. ブラウザからの API 呼び出し（登録など）
 
@@ -220,7 +230,7 @@ BFF は API と認可 API の**ソースを参照しません**。それぞれ�
 
 ### 3. 会員登録（未認証の公開パス）
 
-ブラウザ → Nginx `/signup`（認証なし）→ Nuxt（SSR。`/bff/me` は 401 なので「未認証」として描画）、ブラウザ → Nginx `/bff/signup`（認証なし）→ BFF → 認証 API → Keycloak の Admin API、の順に流れます。登録後は「ログインする」の導線から、いつものログインの流れに入ります。公開パスを通るリクエストは、Nginx が `X-Amzn-Oidc-*` を空にしてから転送します（[public-proxy.conf](../nginx/snippets/public-proxy.conf)）。
+ブラウザ → Nginx `/signup`（認証なし）→ Nuxt（SSR。`/bff/me` は 401 なので「未認証」として描画）、ブラウザ → Nginx `/bff/signup`（認証なし）→ BFF → 認証 API → Keycloak の Admin API、の順に流れます。登録後は「ログインする」の導線から、いつものログインの流れに入ります。公開パスを通るリクエストは、Nginx が `X-Amzn-Oidc-*` を空にしてから転送します（[public-proxy.conf](../../nginx/snippets/public-proxy.conf)）。
 
 ### パス設計のポイント
 
@@ -267,6 +277,6 @@ BFF は API と認可 API の**ソースを参照しません**。それぞれ�
 | 9 | 外部サービス | 期限日が営業日か祝日かを返すカレンダー API | 「タスクの補足情報」の題材 |
 | 10 | クライアントの配布方法 | API 側が生成したクライアントを Maven 成果物として publish し、BFF がバージョンで依存する | 「API クライアントを作っていた」「CodeArtifact を使っていた」という事実に合う形。業務では BFF 側で生成していた可能性もある |
 | 11 | 画面側のクライアント | 型だけ生成し、呼び出しは `openapi-fetch` + 手書きの composable | 業務では自前のクライアント。ここでは型安全にした形を採る（上記「Nuxt と OpenAPI の相性」） |
-| 12 | 認証 API の責務 | Keycloak のユーザー管理の代行（会員登録、参照、パスワード変更）。ログインは担当しない | 業務の責務は不明。前段（ALB）の認証と重ならない範囲に絞った（[設計書 0005](design/0005-auth-api-and-signup.md)） |
+| 12 | 認証 API の責務 | Keycloak のユーザー管理の代行（会員登録、参照、パスワード変更）。ログインは担当しない | 業務の責務は不明。前段（ALB）の認証と重ならない範囲に絞った（[設計書 0005](../design/0005-auth-api-and-signup.md)） |
 | 13 | 会員登録の経路 | 未認証の公開パス（`/signup`、`/bff/signup`）を入口が認証なしで転送する | ALB ではリスナールールごとに認証アクションの有無を選べるため |
 | 14 | Keycloak の設定の置き場所 | realm `customer` は認証 API のリポジトリ、realm `staff`（Okta の代替）は集約リポジトリ | 「認証 API の中に Keycloak があった」という事実に合わせた。staff は業務環境に無い学習用の設定のため |
