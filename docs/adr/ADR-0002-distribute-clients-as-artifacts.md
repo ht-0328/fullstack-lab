@@ -63,7 +63,7 @@ BFF（画面専用のサーバー側 API）が API と認可 API を呼ぶクラ
 | 良くなること | 契約を変える手順が、提供側がバージョンを上げて publish し、利用側がそのバージョンに追従する、という順に固定される | 契約を変える開発者（提供側と利用側の両方） |
 | 良くなること | 各リポジトリの CI が、他のリポジトリを checkout せずに単独で通る | 各リポジトリの開発者と PR のレビュアー（他のリポジトリを待たずに CI の結果を確かめられる） |
 | 悪くなること | ローカルの起動が 2 段階になる。`./scripts/publish-clients.sh` でクライアントを publish してから、`docker compose up -d --build --wait` で起動する | 開発者 |
-| 悪くなること | 提供側のちょっとした変更でも、利用側で使うにはバージョンを上げて publish する必要がある | 提供側（`api`、`authz`、`auth`）の開発者 |
+| 悪くなること | 提供側のちょっとした変更でも、利用側で使うにはバージョンを上げて publish する必要がある | 提供側（`api`、`authz`）の開発者。2026-10-30 からは `auth` の開発者も同じ |
 | 悪くなること | BFF の Docker ビルドは、ビルド中に Maven リポジトリへ到達できることを前提にする。ローカルでは `localhost:8081` の Reposilite に届くように、ビルドを host ネットワークで動かす（`compose.yaml` の `network: host`）。CI では GitHub Packages の資格情報（`MAVEN_REPO_USER`、`MAVEN_REPO_PASSWORD`）を、build secret（イメージに残らない形でビルドに渡す値）として渡す | CI を保守する人と、BFF をローカルでビルドする開発者 |
 
 契約を変えるときの具体的な順序（提供側が仕様の `info.version` とクライアントのビルドの `version` を上げて publish し、利用側が `web/bff/gradle.properties` のバージョンを上げて追従する）は、[設計書 0003 の「契約を変えるときの順序」](../design/0003-contracts-and-repositories.md#契約を変えるときの順序) とスキル [updating-openapi-contract](../../.agents/skills/updating-openapi-contract/SKILL.md) にある。
