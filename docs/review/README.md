@@ -94,10 +94,21 @@
 
 ## 合格までの回数の実績
 
-評価と修正を繰り返す回数の上限は、合格までに何回かかるかの実績がまだ無いので、決め打ちにせず実績から決めます。次の表に、文書ごとに合格までにかかった回数を残します。
+次の表に、文書ごとに合格までにかかった回数を残します。2026-11-02 に 14 本を評価したときは、すべて 2〜5 回目で合格しました。この実績から、5 回を超えても合格しないときは決まりかテンプレートに原因があるとみて人に渡す、と決めました（スキル [writing-docs](../../.agents/skills/writing-docs/SKILL.md) の「止める」）。4 回目以降の多くは、2 回目以降を差分評価にする前の全文評価で、前の回では読んでいなかった箇所から出た指摘でした。
 
 | 文書 | 回数 | 残した指摘 | 日付 |
 |---|---|---|---|
 | [docs/adr/README.md](../adr/README.md) | 2 | 0 | 2026-11-02 |
 | [docs/review/README.md](README.md) | 2 | 0 | 2026-11-02 |
 | [docs/design/README.md](../design/README.md) | 2 | 0 | 2026-11-02 |
+| [docs/design/0002-authentication-authorization.md](../design/0002-authentication-authorization.md) | 3 | 0 | 2026-11-02 |
+| [docs/design/0003-contracts-and-repositories.md](../design/0003-contracts-and-repositories.md) | 3 | 0 | 2026-11-02 |
+| [docs/adr/ADR-0001-nuxt-generates-types-only.md](../adr/ADR-0001-nuxt-generates-types-only.md) | 3 | 0 | 2026-11-02 |
+| [docs/roadmap/README.md](../roadmap/README.md) | 4 | 0 | 2026-11-02 |
+| [docs/architecture/README.md](../architecture/README.md) | 4 | 4 | 2026-11-02 |
+| [docs/README.md](../README.md) | 4 | 0 | 2026-11-02 |
+| [docs/design/0001-task-management.md](../design/0001-task-management.md) | 4 | 0 | 2026-11-02 |
+| [docs/design/0004-task-completion.md](../design/0004-task-completion.md) | 4 | 1 | 2026-11-02 |
+| [docs/design/0005-auth-api-and-signup.md](../design/0005-auth-api-and-signup.md) | 5 | 2 | 2026-11-02 |
+| [docs/adr/ADR-0002-distribute-clients-as-artifacts.md](../adr/ADR-0002-distribute-clients-as-artifacts.md) | 5 | 0 | 2026-11-02 |
+| [docs/adr/ADR-0003-commit-generated-code.md](../adr/ADR-0003-commit-generated-code.md) | 5 | 0 | 2026-11-02 |
