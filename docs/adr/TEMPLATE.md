@@ -39,7 +39,7 @@
 |---|---|
 | 適用対象 | 例: 画面から BFF への呼び出し（`web/frontend/app/composables/useBff.ts`） |
 | 適用開始日 | YYYY-MM-DD |
-| 対象外 | 例: Kotlin 側のクライアント。成果物として配布する（ADR-0002） |
+| 対象外 | 例: Kotlin 側のクライアント。成果物として配布する（[ADR-0002](ADR-0002-distribute-clients-as-artifacts.md)） |
 | 決定者 | ht-0328 |
 
 ## 理由
