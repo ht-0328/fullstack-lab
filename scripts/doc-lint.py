@@ -8,7 +8,7 @@
 確かめること（番号は docs/README.md の決まり）:
   F-2  先頭の表の 7 項目。設計書と ADR の状態の行
   F-5  相対リンクの先（ファイルと見出し）があること。リンクの表示文言がパスのままでないこと
-  W-6  1 段落が 4 文まで（表、箇条書き、引用、コードブロックは除く）
+  W-6  1 段落が 4 文まで（箇条書き、引用、コードブロックは除く）。表のセルも 1 段落として数える
   W-9  architecture/ の「用語」で決めた言い換え（本文で「版」と書かない）
 
 1 件でも見つかれば終了コード 1 を返す。評価の記録（docs/review/docs-*.md）とテンプレートは対象外。
@@ -89,14 +89,16 @@ def check(path: str) -> list:
 
     # W-6 段落の文数 / W-9 用語
     in_code, para, start = False, [], 0
-    def flush():
-        joined = "".join(para)
-        body = re.sub(r"`[^`]*`", "", joined)
+    def sentences(text: str) -> int:
+        body = re.sub(r"`[^`]*`", "", text)
         prev = None
         while prev != body:  # 入れ子の括弧も外す
             prev = body
             body = re.sub(r"\([^()]*\)|（[^（）]*）|「[^「」]*」", "", body)
-        count = body.count("。")
+        return body.count("。")
+
+    def flush():
+        count = sentences("".join(para))
         if count > 4:
             problems.append(("W-6", start, f"1 段落が {count} 文（4 文まで）"))
     for n, line in enumerate(lines, 1):
@@ -114,6 +116,11 @@ def check(path: str) -> list:
             if para:
                 flush()
             para = []
+        if plain.startswith("|"):
+            for cell in re.sub(r"`[^`]*`", "", plain).strip("|").split("|"):
+                count = sentences(cell)
+                if count > 4:
+                    problems.append(("W-6", n, f"表のセルが {count} 文（4 文まで）"))
         body = re.sub(r"`[^`]*`|「[^」]*」", "", line)
         if re.search(r"(?<![出])版(?!本)", body) and not plain.startswith(("#", "| バージョン |")):
             problems.append(("W-9", n, "「版」と書いている（用語の表では「バージョン」）"))
