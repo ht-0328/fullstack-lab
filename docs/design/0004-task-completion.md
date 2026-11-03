@@ -1,6 +1,6 @@
 # 0004 タスクの完了の設計書
 
-> **状態: 実装済み。** 2026-11-01 に未決事項 2 件を解消して承認し、同日に実装した。設計書駆動の流れを試す題材として用意した。
+> **状態: 実装済み。**
 
 | 項目 | 内容 |
 |---|---|
@@ -15,16 +15,16 @@
 
 ## 解決する課題
 
-利用者（アプリを使う人。一般利用者と社員の 2 種類。[用語](../architecture/README.md#用語)）はタスクを登録できるが、片付いたタスクを「完了」にする手段が無い。一覧は増える一方で、まだやることと済んだことを見分けられない。この設計書は、タスクを完了にする操作を画面と API に足し、一覧と詳細で完了を見分けられるようにする。契約の変更、認可の追加、画面の変更を一通り含むので、設計書から実装する流れを試す最初の題材にした。
+利用者（アプリを使う人。一般利用者と社員の 2 種類。[用語](../architecture/README.md#用語)）はタスクを登録できるが、片付いたタスクを「完了」にする手段が無い。一覧は増える一方で、まだやることと済んだことを見分けられない。この設計書は、タスクを完了にする操作を画面と API に足し、一覧と詳細で完了を見分けられるようにする。契約の変更、認可の追加、画面の変更を一通り含むので、設計書から実装する流れを試す最初の題材でもある。
 
 次の表は、この変更の対象と規模、何ができれば完了かをまとめる。
 
 | 項目 | 内容 |
 |---|---|
 | 対象 | タスクの完了状態と、画面での表示・操作 |
-| 発生規模 | リポジトリ 4 つ（`api`、`authz`、`web` と、このリポジトリ fullstack-lab である集約リポジトリ）。契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`。[用語](../architecture/README.md#用語)）2 つの互換変更（項目の追加だけで、既存の呼び出し側は変えなくても動く）。データは学習用で数百件以内 |
+| 発生規模 | リポジトリ 4 つ（`api`、`authz`、`web` と、このリポジトリ fullstack-lab である集約リポジトリ）。契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`。[用語](../architecture/README.md#用語)）2 つ（`api/openapi/api.yaml` と `web/openapi/bff.yaml`）の互換変更（項目の追加だけで、既存の呼び出し側は変えなくても動く）。データは学習用で数百件以内 |
 | 利用者への影響 | 今はタスクを完了にできず、済んだタスクが一覧に残り続ける |
-| 成功条件 | タスクの所有者（一般利用者）か、社員のうちロール `task-admin` を持つ人が完了にでき、一覧と詳細に反映される。一般利用者は他人のタスクを完了にできない。Karate（API のテスト）・Playwright（画面のテスト）・スモークテスト（入口の Nginx から DB まで通す確認）が通る |
+| 成功条件 | タスクの所有者（一般利用者）か、社員のうちロール `task-admin` を持つ人が完了にでき、一覧と詳細に反映される。一般利用者は他人のタスクを完了にできない。Karate（API のテスト）・Playwright（画面のテスト）・スモークテスト（[入口](../architecture/README.md#用語)の Nginx から DB まで通す確認）が通る |
 
 ## 制約と前提
 
@@ -45,22 +45,22 @@
 | 要素 | 採用内容 | 責務 |
 |---|---|---|
 | DB | `tasks.completed_at timestamptz null`。API の起動時に Flyway（DB のマイグレーションツール）がマイグレーション V3 として列を足す | null なら未完了 |
-| API | `POST /api/tasks/{id}/completion` を足し、200 で `Task` を返す。`Task` に `completedAt`（nullable）を足す。既に完了しているタスクには何もせず、現状の `Task` を 200 で返す（冪等。何回呼んでも結果が同じになる。`completedAt` は最初の値のまま） | 完了日時を記録する |
+| API | `POST /api/tasks/{id}/completion` を足し、200 で `Task` を返す。`Task` に `completedAt`（nullable）を足す。既に完了しているタスクには何もせず、現状の `Task` を 200 で返す（冪等。何回呼んでも結果が同じになる）。`completedAt` は最初の値のまま変えない | 完了日時を記録する |
 | 認可 API | 操作 `task:complete` を足す。一般利用者は所有者だけ、社員はロール `task-admin` を持つ人だけを許可する | 完了してよいかを判定する |
-| BFF | `POST /bff/tasks/{id}/complete` を足し、200 で `TaskDetailView` を返す。所有者を知るために先に API からタスクを取得し（無ければ 404）、認可 API に `task:complete` を問い合わせ、許可されたときだけ API の完了を呼ぶ。`TaskSummaryView`（一覧の 1 行）と `TaskDetailView`（詳細）に `completedAt` を足す。利用者単位の `Capabilities`（画面が操作の可否を知るための既存の DTO）には `canCompleteTask` を持たせない。完了できるかはタスクごと（所有者か、完了済みか）に決まるので、詳細 `TaskDetailView` に `canComplete` を返す（完了済みなら認可 API に聞かず false にする） | タスクの取得、認可の問い合わせ、API の呼び出し、画面向けの DTO（画面が受け取る形のデータ）への変換を順に行う |
+| BFF | `POST /bff/tasks/{id}/complete` を足し、200 で `TaskDetailView` を返す。所有者を知るために先に API からタスクを取得し（無ければ 404）、認可 API に `task:complete` を問い合わせ、許可されたときだけ API の完了を呼ぶ。`TaskSummaryView`（一覧の 1 行）と `TaskDetailView`（詳細）に `completedAt` を足す。完了できるかはタスクごと（所有者か、完了済みか）に決まるので、利用者単位の `Capabilities`（画面が操作の可否を知るための既存の DTO（画面が受け取る形のデータ））には `canCompleteTask` を持たせず、詳細 `TaskDetailView` に `canComplete` を返す（完了済みなら認可 API に聞かず false にする） | タスクの取得、認可の問い合わせ、API の呼び出し、画面向けの DTO への変換を順に行う |
 | 画面 | 詳細の「状態」の行に「完了（完了日時）」か「未完了」を出し、`canComplete` が true のときだけ「完了にする」ボタンを出す。一覧は全件を出し（完了したタスクを既定で隠さない）、状態の列に「完了」か「未完了」を出す | 操作と表示 |
 
 ### 影響するリポジトリ
 
-次の表は、リポジトリごとに変更の内容を示す。
+次の表は、リポジトリごとに変更の有無と内容を示す。変えないリポジトリと、変えない部分にも理由を書く。
 
-| リポジトリ | 変更 |
-|---|---|
-| `api` | V3 マイグレーション、`Task` / `TaskRepository` / `TaskController`、`openapi/api.yaml` 1.1.0、Karate |
-| `authz` | `application.yml` に `task:complete`、`PolicyTest`、Karate。契約は変えない（操作名は自由文字列） |
-| `auth` | なし。アカウントの操作は変わらない |
-| `web` | `bff/gradle.properties` の `apiClientVersion` を 1.1.0 に、`openapi/bff.yaml` 1.2.0、`TaskViewService`、一覧と詳細のページ（`frontend/app/pages/index.vue`、`frontend/app/pages/tasks/[id].vue`）、Playwright |
-| 集約 | スモークテスト（`scripts/smoke-test.sh`）に完了の経路を追加、サブモジュールの参照更新 |
+| リポジトリ | 変更 | 変えない理由 |
+|---|---|---|
+| `api` | V3 マイグレーション、`Task` / `TaskRepository` / `TaskController`、`api/openapi/api.yaml` 1.1.0、Karate | — |
+| `authz` | `authz/src/main/resources/application.yml` に `task:complete`、`PolicyTest`、Karate | 契約（`authz/openapi/authz.yaml`）は変えない。操作名は自由文字列のため |
+| `auth` | なし | アカウントの操作は変わらない |
+| `web` | `web/bff/gradle.properties` の `apiClientVersion` を 1.1.0 に、`web/openapi/bff.yaml` 1.2.0、`TaskViewService`、一覧と詳細のページ（`web/frontend/app/pages/index.vue`、`web/frontend/app/pages/tasks/[id].vue`）、Playwright | — |
+| 集約 | スモークテスト（`scripts/smoke-test.sh`）に完了の経路を追加、サブモジュールの参照更新 | — |
 
 ### 契約の変更
 
@@ -108,13 +108,13 @@ components:
 
 次の表は、利用者の種別ごとに `task:complete` の可否を示す。社員はロールで、一般利用者は所有者かどうかで決まる。
 
-| 操作 | 一般利用者 | 社員 `task-viewer` | 社員 `task-admin` |
-|---|---|---|---|
-| `task:complete` | 自分のタスクだけ | 不可 | 可 |
+| 操作 | 一般利用者 | 社員 `task-viewer` | 社員 `task-admin` | 備考 |
+|---|---|---|---|---|
+| `task:complete` | 自分のタスクだけ | 不可 | 可 | 設定の `customer-actions`（一般利用者に許す操作の一覧）と `task-admin` に足す。`task-viewer` は変えない |
 
 認可 API の契約（`authz/openapi/authz.yaml`）は変えない。操作名は自由文字列なので、契約を変えずに操作を足せる。一般利用者の「自分のタスクだけ」は、既存の `task:read` と同じく `resource.ownerId` と `subject` の一致で判定する。
 
-次の抜粋は、設定（`authz/src/main/resources/application.yml`）の差分を示す。`task-admin` と `customer-actions` に `task:complete` を足した。
+次の抜粋は、設定（`authz/src/main/resources/application.yml`）の差分を示す。`task-admin` と `customer-actions` に `task:complete` を足す。
 
 ```yaml
 authz:
@@ -128,13 +128,14 @@ authz:
 
 次の表は、層ごとに何を確かめるかを示す。認可の守りは画面のボタンの有無ではなく、直接呼んで 403 になることで確かめる。
 
-| 層 | 確かめること |
-|---|---|
-| `authz` の `PolicyTest`、Karate | 「認可」の表のとおりに判定する |
-| `api` の Karate | 完了で `completedAt` が入る。既に完了しているタスクへの再実行は 200 で `completedAt` が変わらない。存在しない ID は 404 |
-| `web/bff` の `TaskViewServiceTest` | 拒否なら API を呼ばない。`canComplete` が認可結果と一致する |
-| Playwright | タスクの所有者が完了にでき、一覧の状態の列に「完了」が出る。完了済みのタスクには「完了にする」ボタンが出ない。`task-viewer` の社員にはボタンが出ず、直接呼んでも 403 になる。`task-admin` の社員は他人のタスクも完了にできる |
-| スモークテスト | 入口（Nginx）から BFF、認可 API、API を経て DB まで通す。所有者は 200、他の一般利用者と `task-viewer` の社員は 403、存在しない ID は 404 になる。2 回目の完了でも完了日時は変わらず、`task-admin` の社員は他人のタスクも完了にできる |
+| 層 | 対象 | 確かめること |
+|---|---|---|
+| 単体 | `authz` の `PolicyTest` | 「認可」の表のとおりに判定する |
+| 単体 | `web/bff` の `TaskViewServiceTest` | 拒否なら API を呼ばない。`canComplete` が認可結果と一致する |
+| Karate | 認可 API（`authz`） | 「認可」の表のとおりに判定する |
+| Karate | API（`api`） | 完了で `completedAt` が入る。既に完了しているタスクへの再実行は 200 で `completedAt` が変わらない。存在しない ID は 404 |
+| Playwright | 一覧と詳細の画面 | タスクの所有者が完了にでき、一覧の状態の列に「完了」が出る。完了済みのタスクには「完了にする」ボタンが出ない。`task-viewer` の社員にはボタンが出ず、直接呼んでも 403 になる。`task-admin` の社員は他人のタスクも完了にできる |
+| スモークテスト | 入口（Nginx）から BFF、認可 API、API を経て DB まで | 所有者は 200、他の一般利用者と `task-viewer` の社員は 403、存在しない ID は 404 になる。2 回目の完了でも完了日時は変わらず、`task-admin` の社員は他人のタスクも完了にできる |
 
 ## 比較した代替案とトレードオフ
 
@@ -161,7 +162,7 @@ authz:
 
 ## 技術観点の確認
 
-該当しない観点は、行を残してセルに理由を書くか、行や小節を削ってこの節の本文に理由を書いている（[docs の決まり](../README.md#形式の決まり)の F-3）。
+該当しない観点は、行を削り、各小節の本文に理由を 1 文書いている（[docs の決まり](../README.md#形式の決まり)の F-3）。
 
 ### セキュリティと権限
 
@@ -199,21 +200,18 @@ authz:
 
 | 観点 | 内容 |
 |---|---|
-| 展開手順 | `api` を先に取り込み、api-client 1.1.0 を publish（契約から生成したクライアントを Maven リポジトリに登録すること。[ADR-0002 領域間のクライアントを成果物として配布する](../adr/ADR-0002-distribute-clients-as-artifacts.md)）する。次に `authz` に `task:complete` を足し、`web` が api-client 1.1.0 に追従し、最後に集約リポジトリの参照を更新する。古い BFF は `completedAt` を無視するので、この順にデプロイできる |
+| デプロイ手順 | `api` の変更を先にマージし、api-client 1.1.0 を publish（契約から生成したクライアントを Maven リポジトリに登録すること。[ADR-0002 領域間のクライアントを成果物として配布する](../adr/ADR-0002-distribute-clients-as-artifacts.md)）する。次に `authz` に `task:complete` を足し、`web` が api-client 1.1.0 に追従し、最後に集約リポジトリの参照を更新する。古い BFF は `completedAt` を無視するので、この順にデプロイできる |
 | 切り戻し | 集約リポジトリの `web` の参照を前のコミットに戻す。API の 1.1.0 は互換なので残してよい |
 | 互換性 | 契約は追加のみ（互換）。古い BFF は新しい API と動く |
 | 廃止計画 | なし。廃止する契約や機能は無い |
 
 ## 実装の段取り
 
-実装済みのため該当しない。実装した順序は「展開と後始末」の表の「展開手順」の行のとおりで、`api`、`authz`、`web`、集約リポジトリの順にマージした。
+実装済みのため該当しない。実装の順序は「展開と後始末」の表の「デプロイ手順」の行にある。
 
 ## 未決事項
 
-なし。2026-11-01 に次の 2 点を作成者（ht-0328）が決め、本文に反映した。
-
-- 既に完了しているタスクへの完了操作 → 冪等にし、何もせず 200 で現状を返す（409 にしない）。理由は「比較した代替案とトレードオフ」の表にある
-- 一覧で完了したタスクを既定で隠すか → 隠さない。全件を出し、状態の列の「完了」で見分ける（絞り込みは対象外）。理由は「比較した代替案とトレードオフ」の表にある
+なし。
 
 ## 課題・申し送り事項
 
