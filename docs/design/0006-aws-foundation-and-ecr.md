@@ -1,6 +1,6 @@
 # 0006 AWS の土台と ECR へのイメージの push の設計書
 
-> **状態: 提案。** 2026-11-03 に未決事項を解消した。作成者が実装の段取りを確かめたら承認にする。
+> **状態: 提案。**
 
 | 項目 | 内容 |
 |---|---|
@@ -8,23 +8,23 @@
 | 作成者 | ht-0328（Claude Code で作成） |
 | 機密区分 | 公開可 |
 | 保守責任者 | ht-0328 |
-| 最終確認日 | 2026-11-03 |
+| 最終確認日 | 2026-11-04 |
 | 実装 PR | 実装済みにするときに書く |
 | 想定読者（宛先） | AWS 化のフェーズ 3 を実装する開発者（人と AI）、レビュアー |
 | この文書を読んだあと読者ができること | フェーズ 3 で AWS に作るもの、Terraform のディレクトリと state の置き場所、GitHub Actions から ECR へ push する流れと権限を把握し、追加の質問なしに実装に着手できる |
 
 ## 解決する課題
 
-fullstack-lab は、ローカル（Docker Compose）と CI までできており、次は AWS に載せる段階（[ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 3）にある。AWS のアカウントは 2026-11-03 に作成者が用意し、root ユーザーの MFA と予算アラートまで設定した。しかし、AWS を操作する道具も、構成を書くコード（Terraform。AWS の構成をコードで書いて作る道具）も、アプリのコンテナイメージの置き場もまだ無い。この設計書は、フェーズ 4 以降の土台として、手元から AWS を操作する道具、Terraform の state（Terraform が作ったリソースを記録したファイル。失うと、作ったリソースを Terraform で管理できなくなる）の置き場所、ECR（AWS のコンテナイメージの置き場）、GitHub Actions（以下 Actions）が ECR へイメージを push する仕組みを決める。
+fullstack-lab は、ローカル（Docker Compose）で動く構成と CI を持ち、[ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 3 から AWS に載せる。AWS のアカウントはあるが（状態は [architecture の「AWS アカウント」](../architecture/README.md#aws-アカウント)）、AWS を操作する道具も、構成を書くコード（Terraform。AWS の構成をコードで書いて作る道具）も、アプリのコンテナイメージの置き場もまだ無い。この設計書は、フェーズ 4 以降の土台として、手元から AWS を操作する道具、Terraform の state（Terraform が作ったリソースを記録したファイル。失うと、作ったリソースを Terraform で管理できなくなる）の置き場所、ECR（AWS のコンテナイメージの置き場）、GitHub Actions（以下 Actions）が ECR へイメージを push する仕組みを決める。
 
-次の表は、この変更の対象と規模、何ができれば完了かをまとめる。表の「集約リポジトリ」は、領域の 4 つのリポジトリ、infra リポジトリ、図解のリポジトリを git submodule で束ねるこのリポジトリ fullstack-lab で、「領域」は独立したリポジトリで作るアプリの単位である（[用語](../architecture/README.md#用語)）。「infra リポジトリ」は、この変更で新しく作る AWS のインフラのリポジトリ [fullstack-lab-infra](https://github.com/ht-0328/fullstack-lab-infra) で、集約リポジトリの `infra/` に submodule として入る。この設計書の `infra/bootstrap` などのパスは、集約リポジトリから見たパスである。
+次の表は、この変更の対象と規模、何ができれば完了かをまとめる。表の「集約リポジトリ」は、領域のリポジトリ（`web`、`api`、`authz`、`auth`）、infra リポジトリ、図解のリポジトリを git submodule で束ねるこのリポジトリ fullstack-lab で、「領域」は独立したリポジトリで作るアプリの単位である（[用語](../architecture/README.md#用語)）。「infra リポジトリ」は、この変更で新しく作る AWS のインフラのリポジトリ [fullstack-lab-infra](https://github.com/ht-0328/fullstack-lab-infra) で、集約リポジトリの `infra/` に submodule として入る。この設計書の `infra/bootstrap` などのパスは、集約リポジトリから見たパスである。
 
 | 項目 | 内容 |
 |---|---|
 | 対象 | 手元から AWS を操作する開発者と、アプリのイメージを ECR へ push する人。利用者（アプリを使う人）から見える変化は無い |
 | 発生規模（変えるリポジトリと契約の数） | リポジトリ 6 つ（集約リポジトリ、新しく作る infra リポジトリ、領域の 4 つのリポジトリ `web`、`api`、`authz`、`auth`）。契約は変えない |
 | 利用者への影響（今できないこと、困っていること） | 今は AWS にイメージを置く場所が無く、フェーズ 4 で ECS（AWS のコンテナ実行サービス）に載せるイメージを用意できない |
-| 成功条件 | 領域の 4 つのリポジトリで、Actions の画面から手動で起動したワークフローが、main のコミットのイメージを ECR へ push できる。AWS のリソースはすべて Terraform で作られ、`terraform plan` が差分なしになる。GitHub にも手元にも長期のアクセスキー（期限の無い認証情報）が無い |
+| 成功条件 | 領域の各リポジトリで、Actions の画面から手動で起動したワークフローが、main のコミットのイメージを ECR へ push できる。AWS のリソースはすべて Terraform で作られ、`terraform plan` が差分なしになる。GitHub にも手元にも長期のアクセスキー（期限の無い認証情報）が無い |
 
 ## 制約と前提
 
@@ -32,13 +32,13 @@ fullstack-lab は、ローカル（Docker Compose）と CI までできており
 
 | 区分 | 内容 | 根拠 |
 |---|---|---|
-| 制約 | イメージの push は、main へのマージで自動では行わず、人が Actions を手動で起動して行う | 業務環境（作成者が以前いた職場。[用語](../architecture/README.md#用語)）ではそうしていた（[業務環境について聞いている事実](../architecture/README.md#業務環境について聞いている事実)。2026-11-03 に作成者が確かめた） |
-| 制約 | 長期のアクセスキーを作らない。Actions は OIDC（GitHub が発行するトークンで、AWS の期限つきの認証情報を得る仕組み）、手元は `aws login` で認証する | 漏れても期限で使えなくなる認証情報だけを使うため。`aws login` の扱いは [ADR-0005](../adr/ADR-0005-infra-tools-container.md) |
-| 制約 | AWS CLI と Terraform はホスト（コンテナを動かす側の環境。作成者の環境では Windows の WSL）に入れず、コンテナで動かす | [ADR-0005](../adr/ADR-0005-infra-tools-container.md)（ラッパーで動かす形を決めた [ADR-0004](../adr/ADR-0004-run-aws-tools-in-docker.md) を置き換えたもの） |
-| 制約 | リソースは、マネジメントコンソール（AWS の Web 画面）で 1 回作って理解してから Terraform に書き起こし、コンソールで作ったものは消す | [ロードマップの「フェーズ 3 以降に着手する前に決めること」](../roadmap/README.md#フェーズ-3-以降に着手する前に決めること)（2026-11-01 に作成者が決めた） |
-| 制約 | AWS のアカウント ID を、公開のリポジトリ、Actions のログ、文書に出さない | 集約リポジトリ、infra リポジトリ、領域の 4 つのリポジトリ、図解のリポジトリ（GitHub Pages で公開している HTML）と、Actions のログは公開されている。アカウント ID だけで侵入はされないが、狙う相手を絞る手がかりになるため |
-| 前提 | AWS アカウントは 1 つで、有料プラン、東京リージョン `ap-northeast-1`。サインアップは従来の形式で行った（新しい形式のアカウントは AWS が管理する Organization に入り、その SCP（Organization が配下のアカウントに課す権限の上限）で OIDC プロバイダーの作成が拒否されるため） | 2026-11-03 に作成者が用意した |
-| 前提 | 作成者は IAM（AWS の利用者と権限を管理するサービス）のユーザー `Administrator` で操作する。グループ `Administrators` に、AWS のすべての操作を許す管理ポリシー AdministratorAccess を付けている | 2026-11-03 に作成者が用意した |
+| 制約 | イメージの push は、main へのマージで自動では行わず、人が Actions を手動で起動して行う | 業務環境（作成者が以前いた職場。[用語](../architecture/README.md#用語)）ではそうしていた（[業務環境について聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
+| 制約 | 長期のアクセスキーを作らない。Actions は OIDC（GitHub が発行するトークンで、AWS の期限つきの認証情報を得る仕組み）、手元は `aws login`（AWS の Web 画面へのサインインと同じ ID とパスワードで、期限つきの認証情報を得るコマンド）で認証する | 漏れても期限で使えなくなる認証情報だけを使うため。`aws login` の扱いは [ADR-0005](../adr/ADR-0005-infra-tools-container.md) |
+| 制約 | AWS CLI と Terraform はホスト（コンテナを動かす側の環境。作成者の環境では Windows の WSL）に入れず、コンテナで動かす | [ADR-0005](../adr/ADR-0005-infra-tools-container.md) |
+| 制約 | リソースは、マネジメントコンソール（AWS の Web 画面）で 1 回作って理解してから Terraform に書き起こし、コンソールで作ったものは消す | [ロードマップの「フェーズ 3 以降に着手する前に決めること」](../roadmap/README.md#フェーズ-3-以降に着手する前に決めること) |
+| 制約 | AWS のアカウント ID を、公開のリポジトリ、Actions のログ、文書に出さない | 集約リポジトリ、infra リポジトリ、領域の各リポジトリ、図解のリポジトリ（GitHub Pages で公開している HTML）と、Actions のログは公開されている。アカウント ID だけで侵入はされないが、狙う相手を絞る手がかりになるため |
+| 前提 | AWS アカウントは 1 つで、有料プラン、東京リージョン `ap-northeast-1`。従来の形式でサインアップしたアカウントなので、Actions 用の OIDC プロバイダーを作れる | [architecture の「AWS アカウント」](../architecture/README.md#aws-アカウント) |
+| 前提 | 作成者（[用語](../architecture/README.md#用語)）は、AWS のすべての操作を許された IAM（AWS の利用者と権限を管理するサービス）のユーザー `Administrator` で操作する | [architecture の「AWS アカウント」](../architecture/README.md#aws-アカウント) |
 | 前提 | IaC（AWS の構成をコードで書くこと）のツールは Terraform | [ロードマップの「IaC」](../roadmap/README.md#iac) |
 | 仮定 | この変更だけの仮定は無い。push を手動にするのは業務環境の事実に合わせたもので、構成の仮定には載せない | — |
 
@@ -70,7 +70,7 @@ flowchart LR
 | ECR のリポジトリ | `fullstack-lab/nuxt`、`fullstack-lab/bff`、`fullstack-lab/api`、`fullstack-lab/authz`、`fullstack-lab/auth`。タグは上書き不可（`IMMUTABLE`）、push 時に基本スキャン（無料の脆弱性検査）を行う。ライフサイクルポリシーで、タグ付きの最新 5 個を残し、タグの無いイメージは 1 日で消す | アプリのイメージを置く。5 個残すのは、フェーズ 4 のデプロイで直前のイメージに戻せれば足りるためで、保存料は月 1 ドル未満に収まる |
 | OIDC プロバイダー | `token.actions.githubusercontent.com`。オーディエンス（トークンの宛先。JWT の `aud`）は `sts.amazonaws.com` | AWS が GitHub の ID トークンの署名を信用するための登録 |
 | push 用の IAM ロール | `fullstack-lab-ecr-push-web`、`-api`、`-authz`、`-auth` の 4 つ。信頼ポリシーは、オーディエンスが `sts.amazonaws.com` で、`sub`（どのリポジトリのどのブランチのジョブか）が `repo:ht-0328/fullstack-lab-<名前>:ref:refs/heads/main` のときだけ切り替えを許す。許可のポリシーは、`ecr:GetAuthorizationToken` と、自分の ECR のリポジトリ（`web` は `nuxt` と `bff`、ほかは同名の 1 つ）に対する `ecr:BatchCheckLayerAvailability`、`ecr:InitiateLayerUpload`、`ecr:UploadLayerPart`、`ecr:CompleteLayerUpload`、`ecr:PutImage`、同じタグがあるかを確かめる `ecr:DescribeImages` だけ | 領域の 1 つのリポジトリの Actions が、自分のイメージだけを push できるようにする |
-| push 用のワークフロー | 領域の各リポジトリの `.github/workflows/push-image.yml`。起動は `workflow_dispatch`（Actions の画面の「Run workflow」）だけ。認証は `aws-actions/configure-aws-credentials`（OIDC でロールに切り替える公式のアクション）で行い、アカウント ID をログのマスク（伏せ字にする文字列）に登録する（入力 `mask-aws-account-id`。名前と効き方は「実装の段取り」の 3 で確かめる）。Dockerfile の `runtime` ステージをビルドし、タグはコミットの SHA（40 文字）にする。同じタグが ECR にあれば push しない | main のコミットのイメージを ECR に置く。`web` は `nuxt` と `bff` の 2 つ |
+| push 用のワークフロー | 領域の各リポジトリの `.github/workflows/push-image.yml`。起動は `workflow_dispatch`（Actions の画面の「Run workflow」）だけ。認証は `aws-actions/configure-aws-credentials`（OIDC でロールに切り替える公式のアクション）で行い、アカウント ID をログのマスク（伏せ字にする文字列）に登録する（入力 `mask-aws-account-id`。名前と効き方は「実装の段取り」の 3 で確かめる）。Dockerfile の `runtime` ステージをビルドしてコミットの SHA（40 文字）をタグにし、同じタグが ECR にあれば push しない | main のコミットのイメージを ECR に置く。`web` は `nuxt` と `bff` の 2 つ |
 | GitHub の設定 | 領域の各リポジトリの Secret `AWS_ROLE_ARN` に、そのリポジトリ用のロールの ARN を入れる | ロールの ARN に含まれるアカウント ID を、ワークフローのファイルに書かない |
 | infra リポジトリの CI | 道具のコンテナのイメージを作り、その中で Terraform の `fmt -check` と `validate` を、AWS の認証情報なしで実行する | 道具のイメージが作れること、Terraform のコードの書式と文法の誤りを PR で見つける |
 
@@ -104,13 +104,13 @@ flowchart LR
 |---|---|---|
 | infra リポジトリの CI | 道具のイメージ、`infra/bootstrap` と `infra/shared` | イメージが作れる。`terraform fmt -check` と `terraform validate`（`init -backend=false` で、AWS に接続しない）が通る |
 | 手で確かめる（Terraform） | `infra/shared` | `apply` のあとに `plan` を実行し、差分が無い。道具のコンテナで `aws sts get-caller-identity` が `user/Administrator` を返す |
-| 手で確かめる（push） | 領域の 4 つのリポジトリ | main で「Run workflow」を押すと、コミットの SHA のタグで ECR にイメージが入る。同じコミットでもう一度押すと push せずに成功する |
+| 手で確かめる（push） | 領域の各リポジトリ（`web`、`api`、`authz`、`auth`） | main で「Run workflow」を押すと、コミットの SHA のタグで ECR にイメージが入る。同じコミットでもう一度押すと push せずに成功する |
 | 手で確かめる（守り） | 信頼ポリシー、許可のポリシー、ログ | main 以外のブランチを選んで起動すると、ロールへの切り替えで失敗する。道具のコンテナで `aws iam simulate-principal-policy`（IAM のポリシーを実際には実行せずに評価するコマンド）を打つと、`api` のロールの `ecr:PutImage` が `fullstack-lab/bff` には拒否（`implicitDeny`）になる。ワークフローのログにアカウント ID が出ていない |
 | スモーク（集約） | 入口（すべてのリクエストを最初に受けるもの。ローカルは Nginx。[用語](../architecture/README.md#用語)）から DB まで | 今のまま通る（アプリを変えないことの確認） |
 
 ## 比較した代替案とトレードオフ
 
-次の表は、検討した案を採用案も含めて並べ、採否の理由を示す。判断は 2026-11-03 に作成者が行った。表の publish は、契約から生成したクライアントを Maven リポジトリに登録して配布することである（[用語](../architecture/README.md#用語)）。
+次の表は、検討した案を採用案も含めて並べ、採否の理由を示す。表の publish は、契約から生成したクライアントを Maven リポジトリに登録して配布することである（[用語](../architecture/README.md#用語)）。
 
 | 案 | 利点 | 欠点 | 採否の理由 |
 |---|---|---|---|
@@ -120,8 +120,8 @@ flowchart LR
 | 集約リポジトリがまとめて push する | ワークフローとロールが 1 つで済む | アプリを直しても、集約リポジトリの参照を進めるまで push できない。ロールが全部のイメージに push できる | 不採用。権限が広く、アプリの変更から push までが遠い |
 | インフラのコードを infra リポジトリに置く（採用） | アプリの領域と同じく、変更と CI と main の保護がリポジトリごとに閉じる。アプリの PR とインフラの PR が混ざらない | リポジトリが 1 つ増え、集約リポジトリの参照更新も要る | 領域ごとにリポジトリを分ける今の構成に合わせる |
 | インフラのコードを集約リポジトリの `infra/` に直接置く | リポジトリが増えない | 集約リポジトリの PR にインフラの変更が混ざる。インフラの CI と main の保護を、集約リポジトリのものと分けられない | 不採用。アプリの領域はリポジトリごとに分けており、インフラだけ集約リポジトリに置くと分け方がそろわない |
-| ロールをリポジトリごとに 1 つ（採用） | 権限が最小になる | ロールが 4 つになる | IAM ロールは無料で、Terraform では 1 つの定義を 4 回使うだけで済む |
-| ロールを 4 リポジトリで 1 つ共有 | ロールが 1 つで済む | どのリポジトリからでも全部のイメージに push できる | 不採用。権限が広い |
+| ロールを領域のリポジトリごとに 1 つ（採用） | 権限が最小になる | ロールが 4 つになる | IAM ロールは無料で、Terraform では 1 つの定義を 4 回使うだけで済む |
+| ロールを領域のリポジトリ全体で 1 つ共有 | ロールが 1 つで済む | どのリポジトリからでも全部のイメージに push できる | 不採用。権限が広い |
 | state を S3 に置く（採用） | PC を変えても失わない。一般の業務でも広く使われる形 | 最初にバケットを作る手順が要る | 費用は月数セントで、失ったときの復旧（既存のリソースを 1 つずつ取り込み直す）のほうが重い |
 | state を手元のファイルに置く | 準備が要らない | 消すと Terraform が作ったものを管理できなくなる | 不採用。PC の故障やファイルの削除で state を失うと、作ったリソースを 1 つずつ取り込み直すことになる |
 | イメージのタグをコミットの SHA にする（採用） | どのコミットのイメージかが一意に分かり、上書き不可と両立する | タグを見てもどちらが新しいかが読めない | フェーズ 4 のデプロイで「どのコミットを載せたか」を確かめられる |
@@ -139,7 +139,7 @@ flowchart LR
 | main 以外のブランチで push を起動した | `aws-actions/configure-aws-credentials` がロールへの切り替えで失敗する | ワークフローが失敗し、何も push しない | main を選んで起動し直す |
 | 同じコミットのイメージが既にある | ワークフローが `ecr:DescribeImages` でタグがあるかを確かめる | push せずに成功で終わる | 何もしなくてよい |
 | `bff` のビルドで生成クライアントを取得できない | `docker build` が依存の解決で失敗する | 何も push しない | 今の CI と同じく、`api` / `authz` / `auth` のクライアントが GitHub Packages（CI で生成クライアントを置いている Maven リポジトリ）に publish 済みかを確かめる |
-| 予算（月 10 ドル）を超えそう | AWS Budgets がメールで通知する | 課金は止まらない | 何が費用を出しているかを Billing の画面で確かめ、要らないものを消す |
+| 予算（[architecture の「AWS アカウント」](../architecture/README.md#aws-アカウント) にある月 10 ドルのコスト予算）を超えそう | AWS Budgets（予算を超えそうなときに通知するサービス）がメールで通知する | 課金は止まらない | 何が費用を出しているかを Billing の画面で確かめ、要らないものを消す |
 
 ## 技術観点の確認
 
@@ -168,7 +168,7 @@ flowchart LR
 
 ### 性能と可用性、可観測性
 
-目標値は置かない。学習用の構成で、push は人が手で起動するたびに 1 回だけ動くためである。push のワークフローの所要時間（Gradle のビルドを含むので数分）は、今の CI の単体テストのジョブと同じ程度になる。
+目標値は置かない。学習用の構成で、push は人が手で起動するたびに 1 回だけ動くためである。push のワークフローは、Gradle（ソースのコンパイルとテストをまとめて行うビルドツール）でのビルドを含むので数分かかり、今の CI の単体テストのジョブと同じ程度になる。
 
 ### 展開と後始末
 
@@ -182,14 +182,14 @@ flowchart LR
 
 ## 実装の段取り
 
-次の表は、実装の順序と、各段を終えてよい条件を示す。コンソールで 1 回作ってから Terraform に書き起こす決まり（「制約と前提」の節）に合わせ、2〜4 で state のバケットと `api` の分だけをコンソールで作って試し、消してから 5 で Terraform にする。AWS の画面操作、Actions の起動、GitHub のリポジトリの作成と main の保護は作成者が手で行う。
+次の表は、実装の順序と、各段を終えてよい条件を示す。コンソールで 1 回作ってから Terraform に書き起こす決まり（「制約と前提」の節）に合わせ、2〜4 で state のバケット、OIDC プロバイダー、`api` の分の ECR のリポジトリとロールだけをコンソールで作って試し、消してから 5 で Terraform にする。コンソールの操作、Actions の起動、GitHub のリポジトリの作成と main の保護は作成者が手で行う。
 
 | 順 | リポジトリ / 場所 | やること | 終えてよい条件 | 待つもの |
 |---|---|---|---|---|
 | 1 | `infra`（新規）、集約 | infra リポジトリを作り、道具のコンテナ、`.gitignore`、CI、README を置く。CI が通ったら、作成者が GitHub の設定で main を、PR と CI の成功が無いとマージできないようにする。集約リポジトリに `infra` を submodule として足し、リポジトリの一覧（「影響するリポジトリ」の集約の行）を直す | 作成者が道具のコンテナの中で `aws login --remote` を打ってログインでき、`aws sts get-caller-identity` が `user/Administrator` を返す。infra リポジトリの最初の PR と、集約リポジトリに `infra` を足す PR がマージされた | なし |
-| 2 | AWS の画面（手） | state 用の S3 バケット（バージョニング有効、SSE-S3、パブリックアクセスをすべてブロック）、ECR のリポジトリ `fullstack-lab/api`、OIDC プロバイダー、ロール `fullstack-lab-ecr-push-api` を作る。`api` の Secret `AWS_ROLE_ARN` を設定する | 4 つが画面で確認できる | 1 |
+| 2 | マネジメントコンソール（手） | state 用の S3 バケット（バージョニング有効、SSE-S3、パブリックアクセスをすべてブロック）、ECR のリポジトリ `fullstack-lab/api`、OIDC プロバイダー、ロール `fullstack-lab-ecr-push-api` を作る。`api` の Secret `AWS_ROLE_ARN` を設定する | 4 つがコンソールで確認できる | 1 |
 | 3 | `api` | `push-image.yml`。`aws-actions/configure-aws-credentials` の入力 `mask-aws-account-id` の名前と効き方を確かめる。マージ後に main で「Run workflow」を押す | PR がマージされ、ECR にコミットの SHA のタグのイメージが入る。main 以外のブランチでは失敗する。ログにアカウント ID が出ていない | 2 |
-| 4 | AWS の画面（手） | 2 で作った 4 つとイメージを消す | 画面から 4 つが消えている | 3 |
+| 4 | マネジメントコンソール（手） | 2 で作った 4 つとイメージを消す | コンソールから 4 つが消えている | 3 |
 | 5 | `infra` | `infra/bootstrap`（state のバケット）と `infra/shared`（ECR のリポジトリ 5 つ、OIDC プロバイダー、ロール 4 つ）。`apply` は作成者が道具のコンテナで実行する | `plan` が差分なし。CI が通り、PR がマージされた | 4 |
 | 6 | `api`、`authz`、`auth`、`web` | `authz`、`auth`、`web` に `push-image.yml` を足し、4 つの Secret を 5 のロールの ARN にする。それぞれ main で「Run workflow」を押す | PR がマージされ、5 つのイメージが ECR に入る。「テスト」の節の守りの確認が済んだ | 5 |
 | 7 | 集約 | submodule の参照更新。architecture（AWS の構成）とロードマップ（フェーズ 3 を完了、`infra/` の構成）を今の状態に合わせ、この設計書を実装済みにする | CI（スモーク、Karate、Playwright）が通りマージされた | 6 |
@@ -202,17 +202,11 @@ flowchart LR
 
 ## 未決事項
 
-なし。2026-11-03 に作成者に次の点を確かめ、本文に反映した。
-
-- push の起動は手動（`workflow_dispatch`）にする。main へのマージで自動で push しないのは業務環境の事実でもある
-- push のワークフローは領域の各リポジトリに置く
-- push 用のロールはリポジトリごとに 1 つ（4 つ）にする。IAM ロールと OIDC プロバイダーに費用はかからない
-- Terraform の state は S3 に置く
-- インフラのコードは、集約リポジトリに直接置かず、独立した infra リポジトリ（`fullstack-lab-infra`）に置く
+なし。
 
 ## 課題・申し送り事項
 
-- Nginx と Keycloak のイメージは含めない。どちらも設定ファイル（`nginx/`、`auth/keycloak/`）を入れたイメージにするかを、ECS に載せるフェーズ 4 で決める。
+- Nginx と Keycloak（一般利用者のログインを受け付ける IdP。[用語](../architecture/README.md#用語)）のイメージは含めない。どちらも設定ファイル（`nginx/`、`auth/keycloak/`）を入れたイメージにするかを、ECS に載せるフェーズ 4 で決める。
 - `infra/envs/dev`（作っては壊す環境ごとの構成）とモジュールは、フェーズ 4 で足す。[ロードマップの「IaC」](../roadmap/README.md#iac)の節は、「実装の段取り」の 7 で、`infra/bootstrap` と `infra/shared` を加えた構成に直す。
 - Terraform は手元からだけ実行し、Actions からは実行しない。Actions から `plan` や `apply` を行うかは、フェーズ 4 で決める。
 - フェーズ 6 で CodeBuild（AWS のビルド実行サービス）を入れると、ECR への push は CodeBuild に移る（[ロードマップの「GitHub Actions と CodeBuild の責務分担」](../roadmap/README.md#github-actions-と-codebuild-の責務分担)）。そのとき、この設計の push 用のワークフローとロールを見直す。

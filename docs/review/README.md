@@ -10,7 +10,7 @@
 | 想定読者（宛先） | 文書を直す人、書き方の決まりと評価エージェントを育てる人 |
 | この文書を読んだあと読者ができること | 文書ごとの評価の経過と残った指摘が分かり、どの文書でも繰り返される指摘から、直すべき決まりやテンプレートを見つけられる |
 
-評価エージェント（Claude Code のサブエージェント。文書やコードを読み、決まりや設計とのずれを指摘だけ返す。定義は [doc-review](../../.claude/agents/doc-review.md) と [design-review](../../.claude/agents/design-review.md)）の結果を、文書 1 本につき 1 ファイルで残す場所です。文書を直す人は、直さずに残した指摘をここで確かめます。決まりを育てる人は、どの文書でも出る指摘をここで見つけます。そうした指摘は文書ではなく決まりかテンプレートの側に原因があるので、それらを直す材料にします。
+評価エージェント（Claude Code のサブエージェントで、文書やコードを読み、決まりや設計とのずれを指摘だけ返す。定義は [doc-review](../../.claude/agents/doc-review.md) と [design-review](../../.claude/agents/design-review.md)）の結果を、文書 1 本につき 1 ファイルで残す場所です。文書を直す人は、直さずに残した指摘をここで確かめます。決まりを育てる人は、どの文書でも出る指摘をここで見つけます。そうした指摘は文書ではなく決まりかテンプレートの側に原因があるので、それらを直す材料にします。
 
 ここでいう決まりは [docs の「書き方」](../README.md#書き方人が読める文書にする決まり)と[「形式の決まり」](../README.md#形式の決まり)、テンプレートは[設計書](../design/TEMPLATE.md)と [ADR](../adr/TEMPLATE.md)（Architecture Decision Record。方針とその理由の記録）の型です。人が PR で行うレビューは、PR のコメントと修正コミットが記録なので、ここには残しません。
 
@@ -94,11 +94,17 @@
 
 文書を書いた AI エージェントは、スキル（AI エージェント向けの手順書）[writing-docs](../../.agents/skills/writing-docs/SKILL.md) に従い、要修正が 0 件になるか、前回と同じ指摘が残って減らなくなったら、評価と修正を止めます。減らない指摘は直さずに「残した指摘」に理由を書き、PR 本文にその件数を書いて、人のレビューに判断を委ねます。
 
-2 回目以降の評価は、前回の要修正の箇所と、前回から変えた行だけを見る差分評価にします。毎回全文を読み直すと、前の回で見ていなかった箇所から新しい指摘が出続けて終わらないためです。評価の途中では決まりを変えず、変えたときは影響する文書を全文評価し直します。
+評価は、1 回目と決まりを変えたあとは全文評価にし、その次の回からは、前回の要修正の箇所と前回から変えた行だけを見る差分評価にします。毎回全文を読み直すと、前の回で見ていなかった箇所から新しい指摘が出続けて終わらないためです。評価の途中では決まりを変えず、変えたときは影響する文書を全文評価し直します。
+
+決まりを変えて全文評価し直すときも、回の番号は 1 に戻さず、前の回から続けて振ります。「指摘の一覧」は回の番号で行を照合するので、番号が重なると、どの評価の指摘か分からなくなるためです。「合格までの回数の実績」の回数と、その節にある人に渡す目安の 5 回は、回の番号ではなく、1 回目か、決まりを変えたあとの全文評価から数えます。
+
+決まりを書いた `docs/README.md` 自身は、指摘を直すことがそのまま決まりを変えることになるので、決まりを変えても全文評価し直さずに差分評価で回し、合格したあとに 1 回だけ全文評価します（スキル [writing-docs](../../.agents/skills/writing-docs/SKILL.md) の「決まりを育てる」）。そのため、差分評価で回す間は人に渡す目安を当てはめず、合格したあとのその全文評価から数えます。
 
 ## 合格までの回数の実績
 
 次の表に、文書ごとに合格までにかかった回数を残します。2026-11-02 に 14 本を評価したときは、すべて 2〜5 回目で合格しました。この実績から、5 回を超えても合格しないときは決まりかテンプレートに原因があるとみて人に渡す、と決めました（スキル [writing-docs](../../.agents/skills/writing-docs/SKILL.md) の「止める」）。4 回目以降の多くは、2 回目以降を差分評価にする前の全文評価で、前の回では読んでいなかった箇所から出た指摘でした。
+
+同じ文書の行が 2 つあるものは、2026-11-04 に決まりを変えて全文評価し直したもので、その日の行の回数は、その全文評価から数えています（「止める条件」の節。`docs/README.md` は、合格したあとの全文評価から）。設計書の索引とこの文書は、2026-11-04 には差分評価だけで直したので、その日の行はありません。「残した指摘」は、合格したときに、その文書の記録の「残した指摘」の表にあった行の数で、「日付」は合格した日です。
 
 | 文書 | 回数 | 残した指摘 | 日付 |
 |---|---|---|---|
@@ -119,3 +125,18 @@
 | [docs/design/0006-aws-foundation-and-ecr.md](../design/0006-aws-foundation-and-ecr.md) | 3 | 0 | 2026-11-03 |
 | [docs/adr/ADR-0004-run-aws-tools-in-docker.md](../adr/ADR-0004-run-aws-tools-in-docker.md) | 4 | 0 | 2026-11-03 |
 | [docs/adr/ADR-0005-infra-tools-container.md](../adr/ADR-0005-infra-tools-container.md) | 3 | 0 | 2026-11-03 |
+| [docs/adr/README.md](../adr/README.md) | 1 | 2 | 2026-11-04 |
+| [docs/adr/ADR-0004-run-aws-tools-in-docker.md](../adr/ADR-0004-run-aws-tools-in-docker.md) | 1 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0002-distribute-clients-as-artifacts.md](../adr/ADR-0002-distribute-clients-as-artifacts.md) | 1 | 0 | 2026-11-04 |
+| [docs/design/0001-task-management.md](../design/0001-task-management.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0002-authentication-authorization.md](../design/0002-authentication-authorization.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0003-contracts-and-repositories.md](../design/0003-contracts-and-repositories.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0004-task-completion.md](../design/0004-task-completion.md) | 2 | 1 | 2026-11-04 |
+| [docs/design/0005-auth-api-and-signup.md](../design/0005-auth-api-and-signup.md) | 2 | 6 | 2026-11-04 |
+| [docs/design/0006-aws-foundation-and-ecr.md](../design/0006-aws-foundation-and-ecr.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0001-nuxt-generates-types-only.md](../adr/ADR-0001-nuxt-generates-types-only.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0003-commit-generated-code.md](../adr/ADR-0003-commit-generated-code.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0005-infra-tools-container.md](../adr/ADR-0005-infra-tools-container.md) | 2 | 0 | 2026-11-04 |
+| [docs/architecture/README.md](../architecture/README.md) | 3 | 4 | 2026-11-04 |
+| [docs/roadmap/README.md](../roadmap/README.md) | 3 | 0 | 2026-11-04 |
+| [docs/README.md](../README.md) | 4 | 0 | 2026-11-04 |

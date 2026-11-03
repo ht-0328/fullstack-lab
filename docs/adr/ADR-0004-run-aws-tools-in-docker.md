@@ -1,6 +1,6 @@
 # ADR-0004 AWS CLI と Terraform はホストに入れず、Docker のコンテナで動かす
 
-> **状態: 廃止（[ADR-0005](ADR-0005-infra-tools-container.md) で置き換え）。** 2026-11-03 に、ホストに道具を入れずに済む今の作りに合わせるため採用した。同じ日に、ラッパー（`scripts/aws.sh` と `scripts/tf.sh`）ではコマンドが公式の文書と違う形（`aws` ではなく `./scripts/aws.sh`）になるため、AWS CLI と Terraform を 1 つのコンテナに入れ、その中で公式どおりのコマンドを打つ形（ADR-0005）に置き換えた。ホストに入れないという方針は ADR-0005 に引き継ぎ、この ADR で採らなかった自前の Dockerfile の案を採り直した理由も ADR-0005 に書いている。
+> **状態: 廃止（[ADR-0005](ADR-0005-infra-tools-container.md) で置き換え）。**
 
 | 項目 | 内容 |
 |---|---|
@@ -14,21 +14,21 @@
 
 ## 状況
 
-手元（開発者の PC。作成者の環境は Windows の WSL）から AWS を操作する道具、AWS CLI（AWS をコマンドで操作する公式の道具）と Terraform（AWS の構成をコードで書いて作る道具。[ロードマップの「IaC」](../roadmap/README.md#iac)）を、どう用意するかを決める。AWS 化のフェーズ 3（[ロードマップの「フェーズ」](../roadmap/README.md#フェーズ)）から、この 2 つを使って AWS のリソースを作る。これまでこのリポジトリは、生成、テスト、図解のスクリーンショットまで Docker で動かし、ホスト（コンテナを動かす側の環境。作成者の環境では WSL）には Docker と git だけを置いてきた。フェーズ 3 以降のすべての設計書が同じ道具を使うので、用意の仕方を方針として先に決める必要があった。
+手元（開発者の PC。作成者の環境は Windows の WSL）から AWS を操作する道具、AWS CLI（AWS をコマンドで操作する公式の道具）と Terraform（AWS の構成をコードで書いて作る道具。[ロードマップの「IaC」](../roadmap/README.md#iac)）を、どう用意するかを決める。AWS 化のフェーズ 3（[ロードマップの「フェーズ」](../roadmap/README.md#フェーズ)）から、開発者はこの 2 つを使って AWS のリソースを作る。このリポジトリは、生成、テスト、図解のスクリーンショットまで Docker で動かし、ホスト（コンテナを動かす側の環境。作成者の環境では WSL）には Docker と git だけを置いている。フェーズ 3 以降のすべての設計書が同じ道具を使うので、用意の仕方を方針として先に決める必要があった。
 
 次の表は、決定の前提になる課題、制約、分かっている事実を分けて示す。この決定は道具の用意の仕方だけを決め、業務環境（作成者が以前いた職場。[用語](../architecture/README.md#用語)）について不確かなまま置いたことは無いので、仮定の行は置かない。
 
 | 項目 | 内容 |
 |---|---|
-| 課題 | ホストに直接入れると、人ごとにバージョンがずれ、ずれたまま `terraform apply` すると state（Terraform が作ったリソースを記録したファイル）の形式や結果が変わる |
+| 課題 | ホストに直接入れると、人ごとにバージョンがずれ、ずれたまま `terraform apply`（コードに書いた構成を AWS に反映するコマンド）を実行すると state（Terraform が作ったリソースを記録したファイル）の形式や結果が変わる |
 | 制約 | 長期のアクセスキー（期限の無い認証情報）を作らない。漏れても期限が切れれば使えなくなる認証情報だけを使うためである（[設計書 0006](../design/0006-aws-foundation-and-ecr.md) の「制約と前提」）。手元のログインは `aws login`（AWS CLI 2.32.0 から使える、マネジメントコンソールと同じ ID とパスワードで期限つきの認証情報を得るコマンド）で行う |
-| 事実 | AWS と HashiCorp は、公式のコンテナイメージ（`amazon/aws-cli`、`hashicorp/terraform`）を配布している。`aws login` は、ブラウザの無い環境向けに `--remote`（表示された URL を別の画面で開き、サインイン後に表示されたコードを貼り付ける）を持つ |
+| 事実 | AWS と HashiCorp（Terraform の開発元）は、公式のコンテナイメージ（`amazon/aws-cli`、`hashicorp/terraform`）を配布している。`aws login` は、ブラウザの無い環境向けに `--remote`（表示された URL を別の画面で開き、サインイン後に表示されたコードを貼り付ける）を持つ |
 
 ## 決定
 
 AWS CLI と Terraform はホストに入れず、公式のコンテナイメージをバージョンを固定して `docker run` で動かす。呼び出しは、集約リポジトリ（このリポジトリ fullstack-lab）の `scripts/aws.sh` と `scripts/tf.sh` の 2 つのラッパーに集め、イメージのバージョンはこの 2 つのファイルにだけ書く。
 
-ラッパーは、リポジトリのディレクトリと、ホストの `~/.aws`（AWS CLI の設定と、`aws login` で得た期限つきの認証情報の置き場）をコンテナに渡し、ホストで作業している開発者のユーザー ID（UID）で動かす。ホストのユーザーで動かすのは、コンテナが書いたファイル（`.terraform/` や `~/.aws` の中の認証情報）の所有者が root にならず、ホストからそのまま読み書きや削除ができるようにするためである。`~/.aws` を書き込みできる形で渡すのは、AWS CLI が期限の近い認証情報を自動で更新して書き戻すためである。ログインは `./scripts/aws.sh login --remote` で行う。
+ラッパーは、リポジトリのディレクトリと、ホストの `~/.aws`（AWS CLI の設定と、`aws login` で得た期限つきの認証情報の置き場）をコンテナに渡し、ホストで作業している開発者のユーザー ID（UID）で動かす。ホストのユーザーで動かすのは、コンテナが書いたファイル（Terraform の作業ディレクトリ `.terraform/` や `~/.aws` の中の認証情報）の所有者が root にならず、ホストからそのまま読み書きや削除ができるようにするためである。`~/.aws` を書き込みできる形で渡すのは、AWS CLI が期限の近い認証情報を自動で更新して書き戻すためである。ログインは `./scripts/aws.sh login --remote` で行う。
 
 次の表は、この決定が及ぶ範囲を示す。
 
@@ -68,5 +68,5 @@ AWS CLI と Terraform はホストに入れず、公式のコンテナイメー�
 | 案 | 利点 | 採らなかった理由 |
 |---|---|---|
 | ホスト（WSL）に直接入れる（AWS CLI は公式のインストーラー、Terraform はバージョン管理ツールの `tfenv` や `mise`） | 個人の開発ではもっとも一般的で、`aws login` の既定の流れも補完も使える | バージョンが人ごとにずれうるうえ、このリポジトリの「ホストには Docker と git だけ」という前提が崩れる。`tfenv` や `mise` でそろえても、それ自体を入れる手順が要る |
-| AWS CLI と Terraform を入れたイメージを自前の Dockerfile で作る | 1 つのイメージで両方が動き、Terraform から AWS CLI を呼べる | Terraform の AWS プロバイダーは 6.23.0 から、Terraform 本体の S3 backend（state を S3 に置く設定）は 1.15.0 から、`aws login` の認証情報を自分で読めると公開の検証記事にある（[設計書 0006](../design/0006-aws-foundation-and-ecr.md) の「実装の段取り」で確かめる）。読めない場合も、`./scripts/aws.sh configure export-credentials --format env` で出した期限つきの認証情報を環境変数で `scripts/tf.sh` に渡せる（[設計書 0006 の「失敗時の動作」](../design/0006-aws-foundation-and-ecr.md#失敗時の動作)）。どちらでも Terraform のコンテナに AWS CLI は要らず、公式のイメージを 2 つ使えば Dockerfile の保守も要らない |
+| AWS CLI と Terraform を入れたイメージを自前の Dockerfile で作る | 1 つのイメージで両方が動き、Terraform から AWS CLI を呼べる | Terraform の AWS プロバイダーは 6.23.0 から、Terraform 本体の S3 backend（state を S3 に置く設定）は 1.15.0 から、`aws login` の認証情報を自分で読めると公開の検証記事（[Terraform S3 Backend で aws login 認証が使えるか検証してみた](https://dev.classmethod.jp/articles/terraform-s3-backend-aws-login/)）にあるが、公式の文書では確かめていない。[設計書 0006](../design/0006-aws-foundation-and-ecr.md) の「実装の段取り」で、`infra/bootstrap` と `infra/shared` を Terraform で作る段の最初に、作成者がこの読み込みを確かめる。読めない場合も、`./scripts/aws.sh configure export-credentials --format env` で出した期限つきの認証情報を環境変数で `scripts/tf.sh` に渡せる（[設計書 0006 の「失敗時の動作」](../design/0006-aws-foundation-and-ecr.md#失敗時の動作)）。どちらでも Terraform のコンテナに AWS CLI は要らず、公式のイメージを 2 つ使えば Dockerfile の保守も要らない |
 | Dev Container（開発環境ごとコンテナに入れる VS Code の機能）にまとめる | エディターも含めて環境をそろえられる | AWS の操作のためだけに開発のやり方全体を変えることになり、変更が大きい |

@@ -1,6 +1,6 @@
 # 0003 契約（OpenAPI）とリポジトリ分割、クライアントの配布の設計書
 
-> **状態: 実装済み。** [ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 1.6 で実装した構成を、2026-10-28 に設計書の形で記した（as-built）。
+> **状態: 実装済み。**
 
 | 項目 | 内容 |
 |---|---|
@@ -8,24 +8,24 @@
 | 作成者 | ht-0328（Claude Code で作成） |
 | 機密区分 | 公開可 |
 | 保守責任者 | ht-0328 |
-| 最終確認日 | 2026-10-28 |
+| 最終確認日 | 2026-11-04 |
+| 実装 PR | fullstack-lab#1、fullstack-lab-web#1、fullstack-lab-api#1、fullstack-lab-authz#1 |
 | 想定読者（宛先） | 契約を変える開発者、CI/CD と配布の仕組みを変える人 |
 | この文書を読んだあと読者ができること | 契約を変えたとき、どのリポジトリを、どの順で、何を上げて進めるかを説明できる |
-| 実装 PR | fullstack-lab#1、fullstack-lab-web#1、fullstack-lab-api#1、fullstack-lab-authz#1 |
 
 ## 解決する課題
 
-この設計書は、画面 + BFF（画面専用のサーバー側 API）、API（タスクの API）、認可 API（操作の可否を判定する API）を別々のリポジトリに分け、領域（独立したリポジトリで作る単位）同士を OpenAPI の契約と publish された成果物（契約から生成したクライアントのライブラリ）だけでつなぐ構成を記す。業務環境（作成者が以前いた職場。このリポジトリはその構成を学習用に再現している）と同じ境界を再現し、契約を変える開発者が、他の領域のソースを読まずに影響範囲と順序を判断できるようにするためである。実装済みの構成を設計書の形に整えたもの（as-built）で、以後の契約変更はこの文書を前提にする。言葉の意味は [architecture/ の「用語」](../architecture/README.md#用語) にある。
+この設計書は、画面 + BFF（画面専用のサーバー側 API）、API（タスクの API）、認可 API（操作の可否を判定する API）を別々のリポジトリに分け、領域（独立したリポジトリで作る単位）同士を OpenAPI の契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`）と publish（配布用のリポジトリへの登録）された成果物（契約から生成したクライアントのライブラリ）だけでつなぐ構成を記す。業務環境（作成者が以前いた職場。このリポジトリはその構成を学習用に再現している）と同じ境界を再現し、契約を変える開発者が、他の領域のソースを読まずに影響範囲と順序を判断できるようにするためである。実装済みの構成を設計書の形に整えたもの（as-built）で、以後の契約変更はこの文書を前提にする。言葉の意味は [architecture/ の「用語」](../architecture/README.md#用語) にある。
 
-認証 API（`auth`）は、あとから [設計書 0005](0005-auth-api-and-signup.md) で 4 つ目の領域として同じ仕組みに加わった。この設計書に出てくる数（領域 3 つ、契約 3 つ）は、2026-10-28 時点の構成を指す。
+認証 API（`auth`。一般利用者のアカウント管理を行う API で、ログインは担当しない）は、[設計書 0005](0005-auth-api-and-signup.md) で 4 つ目の領域として同じ仕組みに加わる。この設計書に出てくる数（領域 3 つ、契約 3 つ）は、認証 API を加える前の構成を指す。
 
 次の表は、この構成の対象と規模、何ができれば完了かをまとめる。表の「集約」は集約リポジトリ（このリポジトリ fullstack-lab）を指す。
 
 | 項目 | 内容 |
 |---|---|
-| 対象 | 画面 ⇄ BFF（画面専用の API）、BFF ⇄ API（タスクの API）、BFF ⇄ 認可 API（操作の可否を判定する API）の 3 つの境界 |
-| 発生規模 | リポジトリ 4 つ（集約 1 + 領域 3） |
-| 読者への影響 | 契約を変えたときの影響範囲と順序が決まっており、他の領域のソースを読まなくても開発できる |
+| 対象 | 画面と BFF の間、BFF と API の間、BFF と認可 API の間の 3 つの境界 |
+| 発生規模 | リポジトリ 4 つ（集約リポジトリと、領域の `web`、`api`、`authz`） |
+| 利用者への影響 | 該当しない。この構成はビルド時の配布の仕組みを決めるもので、利用者（アプリを使う人）の操作は変わらない。開発者は、契約を変えたときの影響範囲と順序が決まっているので、他の領域のソースを読まなくても開発できる |
 | 成功条件 | 各リポジトリの CI が単独で通る。集約の CI でサブモジュールを含めた全体が動く。同じバージョンの成果物が上書きされない |
 
 ## 制約と前提
@@ -35,14 +35,14 @@
 | 区分 | 内容 | 根拠 |
 |---|---|---|
 | 制約 | 画面と BFF は同じリポジトリに置き、API は領域ごとに独立したリポジトリにする | 業務環境の事実（[聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
-| 制約 | 生成コードは git で管理し、仕様と生成物の食い違いは Docker の `check-generated` ステージ（生成し直して差分があればビルドを落とす）で防ぐ | 業務環境の事実（生成コードを git で管理していた）。当初は「コミットしない」としていたが、2026-10-28 に [ADR-0003](../adr/ADR-0003-commit-generated-code.md) で切り替えた |
-| 制約 | 同じバージョンの成果物を上書きしない | CodeArtifact（AWS の成果物リポジトリのサービスで、Maven にも対応する。[ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6 で導入予定）と同じ運用にする |
-| 前提 | 業務環境では、画面側は型・DTO を OpenAPI から生成し、画面が BFF を呼ぶクライアントは手で書いていた | 業務環境の事実（[聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
-| 仮定 | API 側が生成したクライアントを Maven 成果物として publish し、BFF がバージョンで依存する（業務環境では BFF 側で生成していた可能性もある） | [構成の仮定 10](../architecture/README.md#仮定) |
+| 制約 | 生成コードは git で管理し、仕様と生成物の食い違いは Docker の `check-generated` ステージ（生成し直して差分があればビルドを落とす）で防ぐ | 業務環境の事実（生成コードを git で管理していた）。方針とその理由は [ADR-0003](../adr/ADR-0003-commit-generated-code.md) にある |
+| 制約 | 同じバージョンの成果物を上書きしない | CodeArtifact（AWS の成果物リポジトリのサービス。[ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6 で導入する）と同じ運用にする |
+| 前提 | 業務環境では、画面側は型・DTO（API でやり取りするデータの型を表すクラス）を OpenAPI から生成し、画面が BFF を呼ぶクライアントは手で書いていた | 業務環境の事実（[聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
+| 仮定 | API 側が生成したクライアントを Maven（Java や Kotlin のライブラリをバージョンを付けて配布する仕組み）の成果物として publish し、BFF がバージョンで依存する（業務環境では BFF 側で生成していた可能性もある） | [構成の仮定 10](../architecture/README.md#仮定) |
 
 ## 採用案
 
-集約リポジトリが 3 つの領域を git submodule で参照し、領域同士は各領域の `openapi/*.yaml` を契約にして、提供側が生成したクライアントを Maven 成果物として配布する。以下では、契約を定義して公開する側を「提供側」（API と認可 API。画面に対しては BFF）、それを呼ぶ側を「利用側」（BFF と画面）と呼ぶ。次の表は、採用案を要素ごとに分け、採用内容と責務を示す。
+この設計書では、契約を定義して公開する側を「提供側」（API と認可 API。画面に対しては BFF）、それを呼ぶ側を「利用側」（BFF と画面）と呼ぶ。集約リポジトリが 3 つの領域（`web`、`api`、`authz`）を git submodule で参照し、領域同士は各領域の `openapi/*.yaml` を契約にして、提供側が生成したクライアントを Maven 成果物として配布する。次の表は、採用案を要素ごとに分け、採用内容と責務を示す。
 
 | 要素 | 採用内容 | 責務 |
 |---|---|---|
@@ -50,10 +50,10 @@
 | 契約 | 各領域の `openapi/*.yaml`。`info.version` でバージョンを管理する | 境界の唯一の定義 |
 | 提供側の生成 | `openapi-generator`（`kotlin-spring`、`interfaceOnly`） | コントローラーのインターフェースと DTO を生成し、実装を仕様に従わせる |
 | BFF 向けクライアント | 提供側が `kotlin`（`jvm-spring-restclient`、Jackson 3）でクライアントを生成し、Maven 成果物として publish する。BFF はそのバージョンで依存する | 利用側（BFF）が提供側のソースを見ずに呼べるようにする |
-| 画面のクライアント | `web/openapi/bff.yaml` から `openapi-typescript` で型だけを生成し、`openapi-fetch` の型付きクライアントで BFF を呼ぶ | HTTP の層は Nuxt と fetch に任せる。理由は [ADR-0001](../adr/ADR-0001-nuxt-generates-types-only.md) |
-| 配布 | ローカル: Reposilite（軽量な Maven リポジトリ。CodeArtifact の代わりにローカルで動かす）、CI: GitHub Packages、AWS（フェーズ 6 で導入予定）: CodeArtifact。Gradle は環境変数（取得は `MAVEN_REPO_URL`、publish は `MAVEN_REPO_PUBLISH_URL`）で切り替える | 環境ごとに Maven リポジトリを替えても、Gradle の設定と手順を変えずに publish と取得ができるようにする。成果物として配布する理由は [ADR-0002](../adr/ADR-0002-distribute-clients-as-artifacts.md) |
+| 画面のクライアント | `web/openapi/bff.yaml` から `openapi-typescript` で型だけを生成し、`openapi-fetch` の型付きクライアントで BFF を呼ぶ | HTTP の層は Nuxt（画面を作るフレームワーク）と fetch に任せる。理由は [ADR-0001](../adr/ADR-0001-nuxt-generates-types-only.md) |
+| 配布 | ローカルでは Reposilite（軽量な Maven リポジトリ。CodeArtifact の代わりにローカルで動かす）、CI では GitHub Packages（GitHub が提供するパッケージの置き場）、AWS では CodeArtifact（フェーズ 6 で導入する）を使う。Gradle（Java と Kotlin のビルドツール）は環境変数（取得は `MAVEN_REPO_URL`、publish は `MAVEN_REPO_PUBLISH_URL`）で切り替える | 環境ごとに Maven リポジトリを替えても、Gradle の設定と手順を変えずに publish と取得ができるようにする。成果物として配布する理由は [ADR-0002](../adr/ADR-0002-distribute-clients-as-artifacts.md) |
 | 閲覧 | Swagger UI（OpenAPI の仕様を画面で読むツール）を入口の `/swagger/` に置く | 3 つの契約（BFF、API、認可 API）を 1 つの画面で見られるようにする。入口（Nginx）の背後に置き、ログイン後にだけ開ける |
-| CI | `api` / `authz`: 単体テストと Karate（API テスト）を実行し、main へのマージでクライアントを publish する。`web`: 型チェックと BFF の単体テストを実行する。集約: Compose で全体を起動し、スモークテスト・Karate・Playwright（画面テスト）を実行する | 各リポジトリの CI が単独で通るようにする |
+| CI | `api` / `authz`: 単体テストと Karate（API テスト）を実行し、main へのマージでクライアントを publish する。`web`: 型チェックと BFF の単体テストを実行する。集約リポジトリ: Compose で全体を起動し、スモークテスト・Karate・Playwright（画面テスト）を実行する | 各リポジトリの CI が単独で通るようにする |
 
 テンプレートの小節のうち、影響するリポジトリは表の「リポジトリ」の行に、テストは「CI」の行に含めた。契約の変更と認可は、この設計が個別の契約や操作を変えないため該当しない。
 
@@ -61,7 +61,7 @@
 
 契約を変えるときは、提供側 → 利用側 → 集約リポジトリの順に、次の手順で進める。
 
-1. 提供側（`api` / `authz`）は、`openapi/*.yaml` の `info.version` と `gradle.properties` の `version` を同時に上げ、生成し直して実装し、PR を出す。main へのマージで CI がクライアントを publish する
+1. 提供側（`api` / `authz`）は、契約（`api/openapi/api.yaml` か `authz/openapi/authz.yaml`）の `info.version` と、同じリポジトリの `gradle.properties`（`api/gradle.properties` か `authz/gradle.properties`）の `version` を同時に上げ、生成し直して実装し、PR を出す。main へのマージで CI がクライアントを publish する
 2. 利用側（`web`）は、`web/bff/gradle.properties` のクライアントのバージョン（`apiClientVersion` など）を上げて実装し、PR を出す
 3. 集約リポジトリは、サブモジュールの参照を進める PR を出す
 
@@ -76,7 +76,7 @@
 | git submodule で実際に分割する（採用） | 業務環境と同じ境界になる。各リポジトリの CI が独立する | コミットと PR が増え、参照更新の手間がかかる | 採用。業務環境と同じ境界を再現し、他の領域のソースを参照できないことを各リポジトリの CI で保証できるため。コミットと PR が増える手間は、業務環境と同じ手順を学ぶ対象として受け入れる |
 | 単一リポジトリでディレクトリ分割 | 手間が少ない。後から `git subtree split` で分けられる | 境界が約束でしか守られない | 不採用。境界が約束でしか守られず、リポジトリごとの PR と参照更新という業務環境と同じ手順を体験できないため |
 | BFF 側で API の仕様からクライアントを生成する | publish の仕組みが要らない | BFF が API の仕様ファイルを参照する経路が要る。バージョンの管理が BFF 任せになる | 不採用。成果物を publish してバージョンで依存する運用（CodeArtifact 相当）を学ぶのが目的のため |
-| 画面側で HTTP 層まで生成する（`typescript-fetch` など） | 呼び出しコードを書かなくてよい | Nuxt の SSR（サーバー側で HTML を作って返す描画）と二重になり、ヘッダーの転送を包み直す必要がある | 不採用。SSR とヘッダー転送の処理が生成コードと二重になるため（[ADR-0001](../adr/ADR-0001-nuxt-generates-types-only.md)） |
+| 画面側で HTTP の層まで生成する（`typescript-fetch` など） | 呼び出しコードを書かなくてよい | Nuxt の SSR（サーバー側で HTML を作って返す描画）のデータ取得と二重になり、SSR のときの BFF の呼び先の切り替えとヘッダーの転送を、生成コードの外側で包み直す必要がある | 不採用。SSR とヘッダー転送の処理が生成コードと二重になるため（[ADR-0001](../adr/ADR-0001-nuxt-generates-types-only.md)） |
 
 ## 失敗時の動作
 
@@ -85,7 +85,7 @@
 | 失敗条件 | 検知方法 | システムの動作 | 開発者への影響 |
 |---|---|---|---|
 | 仕様と実装がずれる | 生成したインターフェースを実装したクラスがコンパイルできない | ビルドが失敗する | 変更を取り込めない |
-| `openapi/*.yaml` の `info.version` と `gradle.properties` の `version` がずれる | 各 client の Gradle タスク `checkSpecVersion`（`api/client/build.gradle.kts` など）が publish の前に 2 つを比べる | publish が失敗する | 変更を取り込めない |
+| 契約（`api/openapi/api.yaml` など）の `info.version` と、同じリポジトリの `gradle.properties`（`api/gradle.properties` など）の `version` がずれる | 提供側のクライアントのプロジェクトごとの Gradle タスク `checkSpecVersion`（`api/client/build.gradle.kts` など）が publish の前に 2 つを比べる | publish が失敗する | 変更を取り込めない |
 | 同じバージョンを再び publish しようとする | `scripts/publish-clients.sh` と CI の publish ジョブが、同じバージョンの成果物が既にあるかを確認する | publish せずに終わる | なし |
 | Maven リポジトリに到達できない | BFF のビルドで依存の解決が失敗する | ビルドが失敗する。ローカルでは、README の「[トラブルシューティング](../../README.md#トラブルシューティング)」が `./scripts/publish-clients.sh` を先に実行するよう案内する | BFF を起動できない |
 | 利用側が古いバージョンのまま | 検知しない。提供側と利用側を同時にデプロイしなくてよいよう、利用側が自分のタイミングで追従する前提にしているため | 古い契約で動き続ける | 新しい項目が使えないだけ |
@@ -121,8 +121,8 @@
 
 ## 未決事項
 
-なし。実装済みの構成について決め残したことは無い。CodeArtifact を導入するときの認証は、フェーズ 6 で決めることなので「課題・申し送り事項」に移した。
+なし。
 
 ## 課題・申し送り事項
 
-- CodeArtifact を導入するとき、認証トークン（有効期限は最長 12 時間）の更新方法を決める。CodeBuild（AWS のビルドサービス）と GitHub Actions（GitHub の CI）のどちらで取得し、どこに保持するかを、作成者（ht-0328）が [ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6（CodeArtifact と CodeBuild）の着手前に決める
+- CodeArtifact を導入するとき、認証トークン（有効期限は最長 12 時間。[ロードマップの「CodeArtifact が担当すること」](../roadmap/README.md#codeartifact-が担当すること)）の更新方法を決める（[#32](https://github.com/ht-0328/fullstack-lab/issues/32)）。CodeBuild（AWS のビルドサービス）と GitHub Actions（GitHub の CI）のどちらで取得し、どこに保持するかを、作成者（ht-0328）が [ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6（CodeArtifact と CodeBuild）の着手前に決める
