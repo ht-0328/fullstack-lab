@@ -14,7 +14,7 @@ description: >-
 
 ## 2. 手順
 
-0. 集約リポジトリに、この変更の課題の issue があるかを確かめます（`gh issue list -R ht-0328/fullstack-lab`）。無ければ [課題のテンプレート](../../../.github/ISSUE_TEMPLATE/issue.md) の節（課題、決めること、やること、閉じる条件）に沿って `gh issue create -R ht-0328/fullstack-lab --body-file <ファイル>` で起票します。未決事項は issue の「決めること」にも書きます。
+0. 集約リポジトリに、この変更の課題の issue があるかを確かめます（`gh issue list -R ht-0328/fullstack-lab`）。無ければ [課題のテンプレート](../../../.github/ISSUE_TEMPLATE/issue.md) の節（課題、決めること、やること、閉じる条件）に沿って `gh issue create -R ht-0328/fullstack-lab --body-file <ファイル>` で起票します。設計書を書き始めたら、決めることは設計書の「未決事項」を正とし、issue の「決めること」はそこへのリンクにします。
 1. [docs/README.md](../../../docs/README.md)（文書の種類と決まり）と [docs/design/TEMPLATE.md](../../../docs/design/TEMPLATE.md) を読み、テンプレートを複製して始めます。書き方に迷ったら直近の設計書（[0005](../../../docs/design/0005-auth-api-and-signup.md)）を例にします。
 2. 既存の設計書（[docs/design/README.md](../../../docs/design/README.md)）、[docs/architecture/](../../../docs/architecture/README.md)、関係する契約（`web/openapi/bff.yaml`、`api/openapi/api.yaml`、`authz/openapi/authz.yaml`、`auth/openapi/auth.yaml`）を読み、矛盾や重複を確かめます。
 3. テンプレートの節をすべて埋めます。該当しない観点は行ごと削り、**なぜ該当しないかを 1 行書きます**（空欄のまま残しません）。

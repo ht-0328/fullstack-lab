@@ -18,15 +18,15 @@
 
 設計書を書いてから実装に反映するまでの順番と、各段で行うことは、[docs の「書く順番」](../README.md#書く順番)の 2〜6 にあります。次の表は、その各段で AI に使わせるスキルとエージェント（評価だけを返すサブエージェント。[用語](../architecture/README.md#用語)）を示します。
 
-表の「作成者」は、文書を書き、未決事項を決める人で、AI が書くときは AI に指示した人です（[用語](../architecture/README.md#用語)）。「契約」は、リポジトリ同士の API の取り決め（各リポジトリの `openapi/*.yaml`）です。「issue」は、集約リポジトリ（このリポジトリ fullstack-lab）に [課題のテンプレート](../../.github/ISSUE_TEMPLATE/issue.md) で起票する GitHub の issue です。設計書は、その issue の課題を解決するために書き、承認後は issue で「実装の段取り」がどこまで済んだかを追います。
+表の「作成者」は、文書を書き、未決事項を決める人で、AI が書くときは AI に指示した人です（[用語](../architecture/README.md#用語)）。「契約」は、リポジトリ同士の API の取り決め（各リポジトリの `openapi/*.yaml`）です。「issue」は、集約リポジトリ（このリポジトリ fullstack-lab）に [課題のテンプレート](../../.github/ISSUE_TEMPLATE/issue.md) で起票する GitHub の issue です。作成者は、その issue の課題を解決するために設計書を書き、承認後は「実装の段取り」がどこまで済んだかを issue で追います。
 
 | 書く順番 | 段 | スキル・エージェント |
 |---|---|---|
 | 2 | 設計書を書き、未決事項を作成者に質問する | スキル `writing-design-doc` |
 | 3 | 書いた設計書を評価し、合格するか指摘が減らなくなるまで直す（止める条件は [review/ の「止める条件」](../review/README.md#止める条件)） | スキル `writing-docs`、エージェント `doc-review` |
-| 4 | 未決事項が無くなり、作成者が「実装の段取り」を確かめたら状態を「承認」にし、issue の「やること」を段取りに書き直す | スキル `writing-design-doc` |
+| 4 | 未決事項が無くなり、作成者が「実装の段取り」を確かめたら状態を「承認」にし、issue の「やること」（チェックリストの節）を、「実装の段取り」と同じ番号で書き直す | スキル `writing-design-doc` |
 | 5 | 設計書の「実装の段取り」に沿って実装して PR を出し、段取りの 1 つが済むたびに issue にチェックを付ける。契約を変えるなら、`updating-openapi-contract` の順序に従う | スキル `implementing-from-design`、`updating-openapi-contract`、`pr-and-commit` |
-| 6 | マージ後、設計書に「実装 PR」を書いて状態を「実装済み」にし、issue を閉じ、設計と実装のずれを確かめる。残った作業は新しい issue にする | スキル `implementing-from-design`、エージェント `design-review` |
+| 6 | マージ後、設計書に「実装 PR」を書いて状態を「実装済み」にし、issue を閉じ、設計と実装のずれを確かめる。残った作業や直さなかったずれは新しい issue にし、設計書の「課題・申し送り事項」からリンクする | スキル `implementing-from-design`、エージェント `design-review` |
 
 ## 索引
 
