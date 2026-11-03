@@ -21,5 +21,6 @@
 | [ADR-0001](ADR-0001-nuxt-generates-types-only.md) | 画面（Nuxt）は OpenAPI から型だけを生成し、HTTP の層は生成しない | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
 | [ADR-0002](ADR-0002-distribute-clients-as-artifacts.md) | 領域間のクライアントは成果物（Maven）として配布し、ソースを共有しない | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
 | [ADR-0003](ADR-0003-commit-generated-code.md) | OpenAPI から生成したコードは git で管理する | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
+| [ADR-0004](ADR-0004-run-aws-tools-in-docker.md) | AWS CLI と Terraform はホストに入れず、Docker のコンテナで動かす | 採用 | [0006](../design/0006-aws-foundation-and-ecr.md) |
 
 方針を覆すときは、作成者（文書を書き、方針を決める人。ht-0328）が新しい ADR を書き、古い ADR の状態を「廃止（ADR-NNNN で置き換え）」にします。古い ADR の決定の中身は変えません（読みやすさの修正は可）。ADR は「なぜその方針にしたか」に答える記録なので、決めた当時の判断と理由を後から読めるように残すためです。

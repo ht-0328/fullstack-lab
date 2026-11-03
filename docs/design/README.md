@@ -12,7 +12,7 @@
 
 この文書は、設計書の索引です。設計書は、機能の追加・変更を実装する前に、何をどう作るかを決める文書で、変更 1 件につき 1 本をこのフォルダに置きます。設計書と ADR（Architecture Decision Record。方針とその理由の記録。[ADR の索引](../adr/README.md)）の使い分けは、[docs の「設計書と ADR の使い分け」](../README.md#設計書と-adr-の使い分け)にあります。
 
-設計書は[テンプレート](TEMPLATE.md)の節構成で書き、例には直近の [0005 認証 API と会員登録](0005-auth-api-and-signup.md)を使います。AI に書かせるときは、スキル [writing-design-doc](../../.agents/skills/writing-design-doc/SKILL.md)（AI エージェント向けの手順書。一覧は [AGENTS.md](../../AGENTS.md) の表）を使います。
+設計書は[テンプレート](TEMPLATE.md)の節構成で書き、例には、実装済みの設計書のうち直近の [0005 認証 API と会員登録](0005-auth-api-and-signup.md)を使います。AI に書かせるときは、スキル [writing-design-doc](../../.agents/skills/writing-design-doc/SKILL.md)（AI エージェント向けの手順書。一覧は [AGENTS.md](../../AGENTS.md) の表）を使います。
 
 ## 設計書を書いてから実装するまでの流れ
 
@@ -36,6 +36,7 @@
 | [0003](0003-contracts-and-repositories.md) | 契約（OpenAPI）とリポジトリ分割、クライアントの配布 | 実装済み | web, api, authz, 集約 |
 | [0004](0004-task-completion.md) | タスクの完了 | 実装済み | web, api, authz, 集約 |
 | [0005](0005-auth-api-and-signup.md) | 認証 API と会員登録（独立リポジトリの認証 API、Keycloak のユーザー管理、公開パス） | 実装済み | auth（新規）, authz, web, 集約 |
+| [0006](0006-aws-foundation-and-ecr.md) | AWS の土台と ECR へのイメージの push（手元の道具、Terraform の state、OIDC と push 用のロール） | 提案 | web, api, authz, auth, 集約 |
 
 状態は「提案」から始まり、未決事項が無くなったら「承認」、実装の PR がマージされたら「実装済み」に進みます。廃止した設計書も索引から消さず、状態を「廃止」にして理由を書きます。過去にどんな案があり、なぜやめたかを辿れるようにするためです。
 
