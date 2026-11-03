@@ -180,7 +180,7 @@
 
 この変更に含めないことと、AWS 化（[ロードマップのフェーズ 5](../roadmap/README.md#フェーズ)。ALB の認証）に送ることを次に挙げる。
 
-- API でも JWT を検証する多層防御は含めない。API は BFF を信頼する（[仮定 7](../architecture/README.md#仮定)）。発展課題として残す。
+- API でも JWT を検証する多層防御は含めない。API は BFF を信頼する（[仮定 7](../architecture/README.md#仮定)）。発展課題として残す（[#31](https://github.com/ht-0328/fullstack-lab/issues/31)）。
 - `x-amzn-oidc-data` の検証は再現しない。ローカルの入口はこのヘッダーを空にして転送する。差分は [ロードマップ「ALB の認証」](../roadmap/README.md#alb-の認証) にある。
 - AWS 上の Keycloak は ECS（AWS のコンテナ実行サービス）で自前運用する（[ロードマップ「IdP の用意」](../roadmap/README.md#idp-の用意)）。Cognito（AWS の IdP サービス）などで代用する案は、ローカルと違う製品になり、学んだ認証の仕組みが AWS につながらないので採らない。費用は常時稼働した場合で月約 25 ドルの見込みである（[ロードマップ「フェーズ」](../roadmap/README.md#フェーズ) の表のフェーズ 5）。
 - フェーズ 5 では、社員の IdP に、Okta の無料の Integrator Free Plan（旧 Developer アカウント）で本物の Okta を使う。BFF の `staff` 発行元の設定を差し替えるだけで、コードは変わらない。プランの制約と差し替え方は [ロードマップ「IdP の用意」](../roadmap/README.md#idp-の用意) にある。
