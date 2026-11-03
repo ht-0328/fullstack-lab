@@ -114,3 +114,4 @@
 | [docs/adr/ADR-0003-commit-generated-code.md](../adr/ADR-0003-commit-generated-code.md) | 5 | 0 | 2026-11-02 |
 | [docs/design/0006-aws-foundation-and-ecr.md](../design/0006-aws-foundation-and-ecr.md) | 3 | 0 | 2026-11-03 |
 | [docs/adr/ADR-0004-run-aws-tools-in-docker.md](../adr/ADR-0004-run-aws-tools-in-docker.md) | 4 | 0 | 2026-11-03 |
+| [docs/adr/ADR-0005-infra-tools-container.md](../adr/ADR-0005-infra-tools-container.md) | 3 | 0 | 2026-11-03 |
