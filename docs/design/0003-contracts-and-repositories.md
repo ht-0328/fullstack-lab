@@ -125,4 +125,4 @@
 
 ## 課題・申し送り事項
 
-- CodeArtifact を導入するとき、認証トークン（有効期限は最長 12 時間。[ロードマップの「CodeArtifact が担当すること」](../roadmap/README.md#codeartifact-が担当すること)）の更新方法を決める。CodeBuild（AWS のビルドサービス）と GitHub Actions（GitHub の CI）のどちらで取得し、どこに保持するかを、作成者（ht-0328）が [ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6（CodeArtifact と CodeBuild）の着手前に決める
+- CodeArtifact を導入するとき、認証トークン（有効期限は最長 12 時間。[ロードマップの「CodeArtifact が担当すること」](../roadmap/README.md#codeartifact-が担当すること)）の更新方法を決める（[#32](https://github.com/ht-0328/fullstack-lab/issues/32)）。CodeBuild（AWS のビルドサービス）と GitHub Actions（GitHub の CI）のどちらで取得し、どこに保持するかを、作成者（ht-0328）が [ロードマップ](../roadmap/README.md#フェーズ)のフェーズ 6（CodeArtifact と CodeBuild）の着手前に決める

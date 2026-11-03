@@ -182,14 +182,14 @@ flowchart LR
 
 ## 実装の段取り
 
-次の表は、実装の順序と、各段を終えてよい条件を示す。コンソールで 1 回作ってから Terraform に書き起こす決まり（「制約と前提」の節）に合わせ、2〜4 で state のバケット、OIDC プロバイダー、`api` の分の ECR のリポジトリとロールだけをコンソールで作って試し、消してから 5 で Terraform にする。マネジメントコンソールの操作、Actions の起動、GitHub のリポジトリの作成と main の保護は作成者が手で行う。
+次の表は、実装の順序と、各段を終えてよい条件を示す。コンソールで 1 回作ってから Terraform に書き起こす決まり（「制約と前提」の節）に合わせ、2〜4 で state のバケット、OIDC プロバイダー、`api` の分の ECR のリポジトリとロールだけをコンソールで作って試し、消してから 5 で Terraform にする。コンソールの操作、Actions の起動、GitHub のリポジトリの作成と main の保護は作成者が手で行う。
 
 | 順 | リポジトリ / 場所 | やること | 終えてよい条件 | 待つもの |
 |---|---|---|---|---|
 | 1 | `infra`（新規）、集約 | infra リポジトリを作り、道具のコンテナ、`.gitignore`、CI、README を置く。CI が通ったら、作成者が GitHub の設定で main を、PR と CI の成功が無いとマージできないようにする。集約リポジトリに `infra` を submodule として足し、リポジトリの一覧（「影響するリポジトリ」の集約の行）を直す | 作成者が道具のコンテナの中で `aws login --remote` を打ってログインでき、`aws sts get-caller-identity` が `user/Administrator` を返す。infra リポジトリの最初の PR と、集約リポジトリに `infra` を足す PR がマージされた | なし |
-| 2 | マネジメントコンソール（手） | state 用の S3 バケット（バージョニング有効、SSE-S3、パブリックアクセスをすべてブロック）、ECR のリポジトリ `fullstack-lab/api`、OIDC プロバイダー、ロール `fullstack-lab-ecr-push-api` を作る。`api` の Secret `AWS_ROLE_ARN` を設定する | 4 つが画面で確認できる | 1 |
+| 2 | マネジメントコンソール（手） | state 用の S3 バケット（バージョニング有効、SSE-S3、パブリックアクセスをすべてブロック）、ECR のリポジトリ `fullstack-lab/api`、OIDC プロバイダー、ロール `fullstack-lab-ecr-push-api` を作る。`api` の Secret `AWS_ROLE_ARN` を設定する | 4 つがコンソールで確認できる | 1 |
 | 3 | `api` | `push-image.yml`。`aws-actions/configure-aws-credentials` の入力 `mask-aws-account-id` の名前と効き方を確かめる。マージ後に main で「Run workflow」を押す | PR がマージされ、ECR にコミットの SHA のタグのイメージが入る。main 以外のブランチでは失敗する。ログにアカウント ID が出ていない | 2 |
-| 4 | マネジメントコンソール（手） | 2 で作った 4 つとイメージを消す | 画面から 4 つが消えている | 3 |
+| 4 | マネジメントコンソール（手） | 2 で作った 4 つとイメージを消す | コンソールから 4 つが消えている | 3 |
 | 5 | `infra` | `infra/bootstrap`（state のバケット）と `infra/shared`（ECR のリポジトリ 5 つ、OIDC プロバイダー、ロール 4 つ）。`apply` は作成者が道具のコンテナで実行する | `plan` が差分なし。CI が通り、PR がマージされた | 4 |
 | 6 | `api`、`authz`、`auth`、`web` | `authz`、`auth`、`web` に `push-image.yml` を足し、4 つの Secret を 5 のロールの ARN にする。それぞれ main で「Run workflow」を押す | PR がマージされ、5 つのイメージが ECR に入る。「テスト」の節の守りの確認が済んだ | 5 |
 | 7 | 集約 | submodule の参照更新。architecture（AWS の構成）とロードマップ（フェーズ 3 を完了、`infra/` の構成）を今の状態に合わせ、この設計書を実装済みにする | CI（スモーク、Karate、Playwright）が通りマージされた | 6 |
