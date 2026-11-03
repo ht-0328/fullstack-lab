@@ -1,7 +1,7 @@
 ---
 name: pr-and-commit
 description: >-
-  fullstack-lab の 5 リポジトリでコミットし、PR を出し、CI を通してマージするときの流儀。
+  fullstack-lab の集約リポジトリとサブモジュールのリポジトリでコミットし、PR を出し、CI を通してマージするときの流儀。
   コミットメッセージの書き方、PR 本文（テンプレート）の埋め方、サブモジュールの参照更新を含む。
   変更を取り込む段階になったら必ず使う。
 ---
@@ -18,7 +18,7 @@ description: >-
 
 ## 2. ブランチと PR
 
-- main は 5 リポジトリとも保護されています（PR と CI が必須）。ブランチ名は `feat/<slug>`、`fix/<slug>`、`test/<slug>`、`docs/<slug>`。
+- main は集約リポジトリと `web` / `api` / `authz` / `auth` / `infra` で保護されています（PR と CI が必須）。ブランチ名は `feat/<slug>`、`fix/<slug>`、`test/<slug>`、`docs/<slug>`。
 - PR の本文は各リポジトリの `.github/pull_request_template.md` に沿って書きます。
 
 | 節 | 書くこと |
@@ -34,7 +34,7 @@ description: >-
 
 ## 3. サブモジュールの参照更新
 
-1. サブモジュール（`web` / `api` / `authz` / `auth`）の PR をマージし、`git -C <dir> checkout main && git -C <dir> pull`。
+1. サブモジュール（`web` / `api` / `authz` / `auth` / `infra`）の PR をマージし、`git -C <dir> checkout main && git -C <dir> pull`。
 2. 集約リポジトリでブランチを切り、`git add <dir>` で参照先のコミットを進め、`chore: <dir> の参照を更新（<要点>）` でコミット。
 3. 集約リポジトリの PR を出します。CI がサブモジュールを含めて Compose を起動し、スモークテスト・Karate・Playwright を実行します。
 
