@@ -8,7 +8,7 @@
 確かめること（番号は docs/README.md の決まり）:
   F-2  先頭の表の 7 項目。設計書と ADR の状態の行
   F-5  相対リンクの先（ファイルと見出し）があること。リンクの表示文言がパスのままでないこと
-  W-6  1 段落が 4 文まで（箇条書き、引用、コードブロックは除く）。表のセルも 1 段落として数える
+  W-6  1 段落が 4 文まで（箇条書き、引用、コードブロックは除く）。表のセルも 1 段落として数える。括弧の中は 2 文まで
   W-9  architecture/ の「用語」で決めた言い換え（本文で「版」と書かない）
 
 1 件でも見つかれば終了コード 1 を返す。評価の記録（docs/review/docs-*.md）とテンプレートは対象外。
@@ -100,6 +100,23 @@ def check(path: str) -> list:
             count += 1
         return count
 
+    def paren_sentences(text: str, n: int):
+        """括弧（全角・半角）の中が 3 文以上なら W-6 として指摘する（括弧の中は 2 文まで）。"""
+        body = re.sub(r"`[^`]*`|「[^「」]*」", "", text)
+        depth, start_i = 0, None
+        for i, ch in enumerate(body):
+            if ch in "（(":
+                if depth == 0:
+                    start_i = i
+                depth += 1
+            elif ch in "）)" and depth:
+                depth -= 1
+                if depth == 0:
+                    inner = body[start_i + 1:i]
+                    count = inner.count("。")
+                    if count > 2:
+                        problems.append(("W-6", n, f"括弧の中が {count} 文（2 文まで）"))
+
     def flush():
         count = sentences("".join(para))
         if count > 4:
@@ -119,6 +136,8 @@ def check(path: str) -> list:
             if para:
                 flush()
             para = []
+        if plain and not plain.startswith(("#", "<!--")):
+            paren_sentences(plain, n)
         if plain.startswith("|"):
             for cell in re.sub(r"`[^`]*`", "", plain).strip("|").split("|"):
                 count = sentences(cell)
