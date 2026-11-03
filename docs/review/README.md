@@ -98,7 +98,7 @@
 
 決まりを変えて全文評価し直すときも、回の番号は 1 に戻さず、前の回から続けて振ります。「指摘の一覧」は回の番号で行を照合するので、番号が重なると、どの評価の指摘か分からなくなるためです。「合格までの回数の実績」の回数と、その節にある人に渡す目安の 5 回は、回の番号ではなく、1 回目か、決まりを変えたあとの全文評価から数えます。
 
-docs/README.md 自身は、指摘を直すことがそのまま決まりを変えることになるので、決まりを変えても全文評価し直さずに差分評価で回し、合格したあとに 1 回だけ全文評価します（スキル [writing-docs](../../.agents/skills/writing-docs/SKILL.md) の「決まりを育てる」）。そのため、差分評価で回す間は人に渡す目安を当てはめず、合格したあとのその全文評価から数えます。
+決まりを書いた docs/README.md 自身は、指摘を直すことがそのまま決まりを変えることになるので、決まりを変えても全文評価し直さずに差分評価で回し、合格したあとに 1 回だけ全文評価します（スキル [writing-docs](../../.agents/skills/writing-docs/SKILL.md) の「決まりを育てる」）。そのため、差分評価で回す間は人に渡す目安を当てはめず、合格したあとのその全文評価から数えます。
 
 ## 合格までの回数の実績
 
@@ -123,3 +123,18 @@ docs/README.md 自身は、指摘を直すことがそのまま決まりを変�
 | [docs/design/0006-aws-foundation-and-ecr.md](../design/0006-aws-foundation-and-ecr.md) | 3 | 0 | 2026-11-03 |
 | [docs/adr/ADR-0004-run-aws-tools-in-docker.md](../adr/ADR-0004-run-aws-tools-in-docker.md) | 4 | 0 | 2026-11-03 |
 | [docs/adr/ADR-0005-infra-tools-container.md](../adr/ADR-0005-infra-tools-container.md) | 3 | 0 | 2026-11-03 |
+| [docs/adr/README.md](../adr/README.md) | 1 | 2 | 2026-11-04 |
+| [docs/adr/ADR-0004-run-aws-tools-in-docker.md](../adr/ADR-0004-run-aws-tools-in-docker.md) | 1 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0002-distribute-clients-as-artifacts.md](../adr/ADR-0002-distribute-clients-as-artifacts.md) | 1 | 0 | 2026-11-04 |
+| [docs/design/0001-task-management.md](../design/0001-task-management.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0002-authentication-authorization.md](../design/0002-authentication-authorization.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0003-contracts-and-repositories.md](../design/0003-contracts-and-repositories.md) | 2 | 0 | 2026-11-04 |
+| [docs/design/0004-task-completion.md](../design/0004-task-completion.md) | 2 | 1 | 2026-11-04 |
+| [docs/design/0005-auth-api-and-signup.md](../design/0005-auth-api-and-signup.md) | 2 | 6 | 2026-11-04 |
+| [docs/design/0006-aws-foundation-and-ecr.md](../design/0006-aws-foundation-and-ecr.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0001-nuxt-generates-types-only.md](../adr/ADR-0001-nuxt-generates-types-only.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0003-commit-generated-code.md](../adr/ADR-0003-commit-generated-code.md) | 2 | 0 | 2026-11-04 |
+| [docs/adr/ADR-0005-infra-tools-container.md](../adr/ADR-0005-infra-tools-container.md) | 2 | 0 | 2026-11-04 |
+| [docs/architecture/README.md](../architecture/README.md) | 3 | 0 | 2026-11-04 |
+| [docs/roadmap/README.md](../roadmap/README.md) | 3 | 0 | 2026-11-04 |
+| [docs/README.md](../README.md) | 4 | 0 | 2026-11-04 |
