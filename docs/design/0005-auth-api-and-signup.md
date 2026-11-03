@@ -37,7 +37,7 @@
 | 制約 | 認証 API は独立したリポジトリにし、Keycloak をその中に置く | 業務環境の事実（[architecture/ の「業務環境について聞いている事実」](../architecture/README.md#業務環境について聞いている事実)） |
 | 制約 | 社員のアカウントは扱わない | Okta は外部の SaaS で、アカウント管理はアプリの外にある |
 | 制約 | 領域同士は契約（OpenAPI）と、契約から生成して publish（Maven リポジトリに登録して配布）した成果物だけでつなぐ | 設計書 [0003](0003-contracts-and-repositories.md)、[ADR-0002 領域間のクライアントは成果物（Maven）として配布し、ソースを共有しない](../adr/ADR-0002-distribute-clients-as-artifacts.md) |
-| 前提 | ログインは引き続き前段（アプリより手前で認証とセッションを担う層。ローカルは oauth2-proxy、AWS では ALB の認証アクション。ALB は AWS のロードバランサー）が Keycloak のログイン画面へ誘導する | 設計書 [0002](0002-authentication-authorization.md) |
+| 前提 | ログインは引き続き前段（アプリより手前で認証とセッションを担う層で、ローカルは oauth2-proxy、AWS では ALB の認証アクション。ALB は AWS のロードバランサー）が Keycloak のログイン画面へ誘導する | 設計書 [0002](0002-authentication-authorization.md) |
 | 前提 | BFF（JWT を検証し、認可 API と API を呼ぶ）が受け取る JWT（IdP が署名して発行するトークン）の `sub`（利用者を一意に示すクレーム）は Keycloak のユーザー ID（本文では利用者 ID と呼ぶ）である | Keycloak は、発行するトークンの `sub` に Keycloak のユーザー ID を入れる |
 | 仮定 | 認証 API の責務は「Keycloak のユーザー管理の代行」（登録、プロフィール参照、パスワード変更）とし、ログインは担当しない | 業務環境の認証 API が何を担っていたかは記録が無く、確かめられない。前段の認証と重ならない範囲に絞る。[構成の仮定 12](../architecture/README.md#仮定) |
 | 仮定 | Keycloak の設定のうち、realm（Keycloak の中で、Keycloak のユーザーとクライアントをまとめる区画）`customer`（一般利用者）は `auth` リポジトリに、realm `staff`（Okta の代替）は集約リポジトリに置く | 業務環境で Keycloak の設定をどう分けていたかは不明。「認証 API の中に Keycloak があった」という事実に合わせ、業務環境に無い realm `staff` は集約リポジトリに残す。[構成の仮定 14](../architecture/README.md#仮定) |

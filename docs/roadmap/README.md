@@ -81,7 +81,7 @@ AWS では、Nginx をパターン A の位置に置きます。Nuxt は画面�
   - `mypage.<domain>`（一般利用者のマイページ）：`authenticate-oidc`（Keycloak の realm `customer`）
   - `admin.<domain>`（社員の管理画面）：`authenticate-oidc`（Okta）
   - `mypage.<domain>` の `/signup`、`/bff/signup`、`/_nuxt/*`：認証アクションなしで転送（会員登録の公開パス。ローカルの Nginx の `public-locations.conf` に相当。[仮定 13](../architecture/README.md#仮定)）
-- 未認証の利用者は IdP（Identity Provider。ログインを受け付けてトークンを発行するサービス。ここでは Keycloak と Okta）へリダイレクトされます。認証のあと、ALB はセッション Cookie（`AWSELBAuthSessionCookie-*`）を発行し、次のヘッダーを付けて転送します。
+- 未認証の利用者は IdP（Identity Provider。ログインを受け付けてトークンを発行するサービスで、ここでは Keycloak と Okta）へリダイレクトされます。認証のあと、ALB はセッション Cookie（`AWSELBAuthSessionCookie-*`）を発行し、次のヘッダーを付けて転送します。
   - `x-amzn-oidc-accesstoken`：IdP のアクセストークン（JWT）。**BFF が IdP の公開鍵で検証します**（ローカルと同じ。検証する対象をこのヘッダーにするのは学習用の仮定。[仮定 3](../architecture/README.md#仮定)）
   - `x-amzn-oidc-identity`：利用者の ID（`sub` クレーム）
   - `x-amzn-oidc-data`：ALB が ES256 で署名した JWT（利用者の情報）

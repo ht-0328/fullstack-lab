@@ -114,6 +114,9 @@ def check(path: str) -> list:
                 if depth == 0:
                     inner = body[start_i + 1:i]
                     count = inner.count("。")
+                    tail = re.sub(r"\[[^\]]*\]\([^)]*\)", "", inner.rsplit("。", 1)[-1])
+                    if count and re.search(r"[^\s、。（）()]", tail):  # 「。」の無い最後の文も数える（リンクだけの末尾は数えない）
+                        count += 1
                     if count > 2:
                         problems.append(("W-6", n, f"括弧の中が {count} 文（2 文まで）"))
 
