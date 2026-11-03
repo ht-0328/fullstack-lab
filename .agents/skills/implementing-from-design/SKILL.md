@@ -10,7 +10,7 @@ description: >-
 
 ## 1. 着手前
 
-1. 設計書を読み、状態が「承認」で、「未決事項」が空であることを確かめます。どちらかを満たさなければ実装せず、ユーザーに確認します。作業の issue（集約リポジトリ）を探し、無ければ [writing-design-doc](../writing-design-doc/SKILL.md) の手順で立てます。「実装の段取り」の節があれば、その順で進めます（無ければ次の表の順）。
+1. 設計書を読み、状態が「承認」で、「未決事項」が空であることを確かめます。どちらかを満たさなければ実装せず、ユーザーに確認します。課題の issue（集約リポジトリ）を探し、無ければ [writing-design-doc](../writing-design-doc/SKILL.md) の手順 0 で起票します。「実装の段取り」の節があれば、その順で進めます（無ければ次の表の順）。
 2. 「影響するリポジトリ」に挙がったリポジトリごとに、main を最新にしてブランチを切ります（サブモジュールの中でも `git -C <dir> checkout -b ...`）。
 3. 「契約の変更」があれば、`updating-openapi-contract` の順序で先に提供側を進めます。
 
@@ -40,5 +40,6 @@ description: >-
 
 1. 各リポジトリでテストを実行し、結果を PR 本文の「テスト内容」に書きます（コマンドと、その検証で十分と判断した理由）。
 2. `pr-and-commit` に従って PR を出します。PR の概要に `Refs ht-0328/fullstack-lab#<issue の番号>` を書きます。サブモジュールの PR がマージされてから、集約リポジトリの参照更新 PR を出します。段がマージされたら、issue の段取りにチェックを付け、PR へのリンクを書きます。
-3. 設計書の先頭に「実装 PR」の行を追加し、設計書と索引の状態を「実装済み」にします（実装の PR がすべてマージされたあと、集約リポジトリの最後の PR で行う）。その PR がマージされたら issue を閉じます。[docs/architecture/](../../../docs/architecture/README.md) と [docs/roadmap/](../../../docs/roadmap/README.md) を今の状態に合わせます。
+3. 設計書の先頭に「実装 PR」の行を追加し、設計書と索引の状態を「実装済み」にします（実装の PR がすべてマージされたあと、集約リポジトリの最後の PR で行う）。その PR がマージされたら issue を閉じます。
+5. 残課題（後に回したこと、設計とのずれ、design-review で直さなかった指摘、決まっていないこと）があれば、1 つにつき 1 つ issue を起票し（同じ課題の issue があればコメントを足す）、PR の「課題・申し送り事項」からリンクします。[docs/architecture/](../../../docs/architecture/README.md) と [docs/roadmap/](../../../docs/roadmap/README.md) を今の状態に合わせます。
 4. `design-review` エージェントで設計書と実装のずれを確認します。結果は `docs/review/docs-design-NNNN-<slug>.md` の「design-review」の節に書きます（[docs/review/README.md](../../../docs/review/README.md)）。
