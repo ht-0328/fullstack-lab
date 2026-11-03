@@ -18,3 +18,7 @@
 	path = references/architecture-notes
 	url = https://github.com/ht-0328/fullstack-lab-architecture-notes.git
 	branch = main
+[submodule "infra"]
+	path = infra
+	url = https://github.com/ht-0328/fullstack-lab-infra.git
+	branch = main

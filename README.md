@@ -31,6 +31,7 @@ Nuxt、Kotlin + Spring Boot（BFF / 認証 API / 認可 API / API）、PostgreSQ
 | [fullstack-lab-api](https://github.com/ht-0328/fullstack-lab-api) | `api/` | 業務 API、Flyway、WireMock のスタブ。契約は `api/openapi/api.yaml` |
 | [fullstack-lab-authz](https://github.com/ht-0328/fullstack-lab-authz) | `authz/` | 認可 API。契約は `authz/openapi/authz.yaml` |
 | [fullstack-lab-auth](https://github.com/ht-0328/fullstack-lab-auth) | `auth/` | 認証 API（Keycloak のユーザー管理の代行）と realm `customer` の定義。契約は `auth/openapi/auth.yaml` |
+| [fullstack-lab-infra](https://github.com/ht-0328/fullstack-lab-infra) | `infra/` | AWS のインフラ。Terraform と、AWS CLI と Terraform を入れた道具のコンテナ（[設計書 0006](docs/design/0006-aws-foundation-and-ecr.md)） |
 
 ## 必要なもの
 
@@ -216,6 +217,7 @@ fullstack-lab/
 │   ├── client/
 │   ├── karate/
 │   └── compose.test.yaml
+├── infra/    (submodule)        # AWS のインフラ。Terraform と道具のコンテナ（docker compose run --rm tools で入る）
 └── auth/     (submodule)        # Spring Boot。認証 API（Keycloak の Admin API の前段）と realm customer の定義
     ├── openapi/auth.yaml
     ├── keycloak/import/

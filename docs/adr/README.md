@@ -6,7 +6,7 @@
 | 作成者 | ht-0328（Claude Code で作成） |
 | 機密区分 | 公開可 |
 | 保守責任者 | ht-0328 |
-| 最終確認日 | 2026-11-01 |
+| 最終確認日 | 2026-11-03 |
 | 想定読者（宛先） | 方針に従ってコードや構成を変える開発者（人と AI） |
 | この文書を読んだあと読者ができること | 今有効な方針を一覧でき、理由を書いた ADR を探せる |
 
@@ -21,6 +21,7 @@
 | [ADR-0001](ADR-0001-nuxt-generates-types-only.md) | 画面（Nuxt）は OpenAPI から型だけを生成し、HTTP の層は生成しない | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
 | [ADR-0002](ADR-0002-distribute-clients-as-artifacts.md) | 領域間のクライアントは成果物（Maven）として配布し、ソースを共有しない | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
 | [ADR-0003](ADR-0003-commit-generated-code.md) | OpenAPI から生成したコードは git で管理する | 採用 | [0003](../design/0003-contracts-and-repositories.md) |
-| [ADR-0004](ADR-0004-run-aws-tools-in-docker.md) | AWS CLI と Terraform はホストに入れず、Docker のコンテナで動かす | 採用 | [0006](../design/0006-aws-foundation-and-ecr.md) |
+| [ADR-0004](ADR-0004-run-aws-tools-in-docker.md) | AWS CLI と Terraform はホストに入れず、Docker のコンテナで動かす | 廃止（[ADR-0005](ADR-0005-infra-tools-container.md) で置き換え） | [0006](../design/0006-aws-foundation-and-ecr.md) |
+| [ADR-0005](ADR-0005-infra-tools-container.md) | AWS CLI と Terraform は 1 つの道具のコンテナに入れ、中に入って公式どおりのコマンドで使う | 採用 | [0006](../design/0006-aws-foundation-and-ecr.md) |
 
 方針を覆すときは、作成者（文書を書き、方針を決める人。ht-0328）が新しい ADR を書き、古い ADR の状態を「廃止（ADR-NNNN で置き換え）」にします。古い ADR の決定の中身は変えません（読みやすさの修正は可）。ADR は「なぜその方針にしたか」に答える記録なので、決めた当時の判断と理由を後から読めるように残すためです。

@@ -6,7 +6,7 @@
 | 作成者 | ht-0328（Claude Code で作成） |
 | 機密区分 | 公開可 |
 | 保守責任者 | ht-0328 |
-| 最終確認日 | 2026-11-01 |
+| 最終確認日 | 2026-11-03 |
 | 想定読者（宛先） | AWS 化と CI/CD を進める人、費用を確認する人 |
 | この文書を読んだあと読者ができること | フェーズの順序と状態、費用の見込み、着手前に決めることを説明できる |
 
@@ -51,7 +51,9 @@
 
 ### IaC
 
-IaC のツールは、2026-11-01 に作成者が Terraform に決めました。AWS CDK（TypeScript で AWS の構成を書くツール）でも同じ構成を書けますが、Terraform は学習に使える資料が多く、一般の業務でも広く使われているので、Terraform にしました。Terraform のコードは、マネジメントコンソールで 1 回作って理解したものを書き起こします（「フェーズ 3 以降に着手する前に決めること」の節）。集約リポジトリ（このリポジトリ fullstack-lab）の `infra/` 配下に、環境ごとのディレクトリ（`envs/dev`）とモジュールを置く予定です。
+IaC のツールは、2026-11-01 に作成者が Terraform に決めました。AWS CDK（TypeScript で AWS の構成を書くツール）でも同じ構成を書けますが、Terraform は学習に使える資料が多く、一般の業務でも広く使われているので、Terraform にしました。Terraform のコードは、マネジメントコンソールで 1 回作って理解したものを書き起こします（「フェーズ 3 以降に着手する前に決めること」の節）。
+
+コードは AWS のインフラのリポジトリ `fullstack-lab-infra` に置きます（[設計書 0006](../design/0006-aws-foundation-and-ecr.md)）。このリポジトリは、集約リポジトリ（このリポジトリ fullstack-lab。[用語](../architecture/README.md#用語)）の `infra/` に submodule として入ります。環境ごとのディレクトリ（`envs/dev`）とモジュールは、フェーズ 4 でそこに足す予定です。
 
 ### Nginx の配置
 
@@ -136,7 +138,7 @@ CodeBuild の呼び出し方は、次の 2 通りがあります。どちらに�
 
 1. **生成クライアントの配布（実装済みの流れ）**：`api` / `authz` / `auth`（API、認可 API、認証 API の各リポジトリ。認証 API は一般利用者のアカウントを管理する API）が OpenAPI から生成した `api-client` / `authz-client` / `auth-client` を publish し、BFF がバージョンで依存します。publish は CodeBuild が VPC の中で IAM ロールを使って行います。取得する側（BFF のビルド）は、`aws codeartifact get-authorization-token` で得たトークンを `MAVEN_REPO_PASSWORD` に入れます。このトークンの有効期限は最長 12 時間です。
 2. **依存パッケージのプロキシとキャッシュ**：Maven Central と npm を上流に登録し、Gradle と npm は CodeArtifact だけを参照するようにします。社外のレジストリが落ちても影響を受けにくくなり、取り込むパッケージも管理しやすくなります。
-3. **社内共通ライブラリの配布**：いま `RequestIdFilter`（入口が付けた `X-Request-Id` をログに載せるフィルター）は、API・BFF・認可 API・認証 API に同じものを置いてあります。領域（独立したリポジトリで作る単位）の間でソースを直接参照しない決まり（[AGENTS.md](../../AGENTS.md)）があるためです。これを共通ライブラリに切り出し、CodeArtifact に publish して各サービスから使います。
+3. **社内共通ライブラリの配布**：いま `RequestIdFilter`（入口が付けた `X-Request-Id` をログに載せるフィルター）は、API・BFF・認可 API・認証 API に同じものを置いてあります。領域（独立したリポジトリで作るアプリの単位。[用語](../architecture/README.md#用語)）の間でソースを直接参照しない決まり（[AGENTS.md](../../AGENTS.md)）があるためです。これを共通ライブラリに切り出し、CodeArtifact に publish して各サービスから使います。
 
 GitHub Packages と CodeArtifact の違いは、認証（`GITHUB_TOKEN` と IAM）と、上流プロキシの有無です。学習では GitHub Packages で十分に流れを体験できるので、CodeArtifact は AWS 化の段階（フェーズ 6）で置き換えます。
 

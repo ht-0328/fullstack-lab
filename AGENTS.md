@@ -5,7 +5,7 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 ## このリポジトリについて
 
 - 業務環境に近い構成を学習用に再現したタスク管理アプリです。全体像は [README.md](README.md)、構成と仮定は [docs/architecture/](docs/architecture/README.md)、文書の置き場所は [docs/README.md](docs/README.md) にあります。
-- 5 つのリポジトリで構成され、ここは集約リポジトリです。`web/`（画面 + BFF）、`api/`、`authz/`、`auth/`（認証 API と Keycloak の realm `customer`）は git submodule で、それぞれ独立した Git リポジトリです。**サブモジュールの中を変更したら、そのリポジトリでブランチを切り、PR を出します。** 集約リポジトリでは参照先のコミットを進める PR を別に出します。
+- 複数のリポジトリで構成され、ここは集約リポジトリです。`web/`（画面 + BFF）、`api/`、`authz/`、`auth/`（認証 API と Keycloak の realm `customer`）、`infra/`（AWS のインフラ。Terraform と道具のコンテナ）は git submodule で、それぞれ独立した Git リポジトリです。**サブモジュールの中を変更したら、そのリポジトリでブランチを切り、PR を出します。** 集約リポジトリでは参照先のコミットを進める PR を別に出します。
 - 領域同士は OpenAPI の契約と publish された成果物だけでつながります。他の領域のソースを直接参照するコードは書きません。
 - 業務環境について分かっている事実と、学習用に置いた仮定は [docs/architecture/ の「仮定」](docs/architecture/README.md#仮定) で分けています。仮定を事実のように書かないでください。
 
@@ -33,7 +33,7 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 ## 絶対厳守
 
 - **日本語で書く**: 回答、コミットメッセージ、PR 本文、コードコメント、ドキュメントは日本語で書きます（技術用語は英語のままで構いません）。
-- **main に直接 push しない**: 4 リポジトリとも main は保護されています。ブランチ → PR → CI が通ってからマージします。
+- **main に直接 push しない**: 集約リポジトリと `web` / `api` / `authz` / `auth` / `infra` の main は保護されています。ブランチ → PR → CI が通ってからマージします。
 - **秘密情報を出さない**: `.env` の中身、トークン、クライアントシークレットを生成・出力・コミットしません。`.env.example` のダミー値だけを扱います。
 - **契約を黙って変えない**: `openapi/*.yaml` を変えるときは `updating-openapi-contract` の手順に従い、`info.version` とビルドのバージョンを同時に上げ、影響する呼び出し側を PR に書きます。
 - **生成コードを手で直さない**: OpenAPI から生成したコード（各リポジトリの `src/generated`、`web/frontend/app/types/bff.d.ts`）は git で管理しますが、手で直しません。仕様を直して `./scripts/generate.sh` で生成し直し、生成物も同じコミットに含めます。生成し忘れや手直しは Docker の test / typecheck ステージ（`check-generated`）が落とします（[ADR-0003](docs/adr/ADR-0003-commit-generated-code.md)）。
