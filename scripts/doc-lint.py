@@ -95,7 +95,10 @@ def check(path: str) -> list:
         while prev != body:  # 入れ子の括弧も外す
             prev = body
             body = re.sub(r"\([^()]*\)|（[^（）]*）|「[^「」]*」", "", body)
-        return body.count("。")
+        count = body.count("。")
+        if body.strip() and not body.rstrip().endswith("。"):  # 「。」の無い最後の文も 1 文と数える
+            count += 1
+        return count
 
     def flush():
         count = sentences("".join(para))
