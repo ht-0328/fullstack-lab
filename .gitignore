@@ -8,3 +8,6 @@
 .vscode/
 *.iml
 .DS_Store
+
+# AI エージェントの一時ファイル（評価の指摘の一覧など。スキル writing-docs が使う）
+.agents/tmp/
