@@ -9,23 +9,23 @@ fullstack-lab で作業する AI コーディングエージェント共通の�
 - 領域同士は OpenAPI の契約と publish された成果物だけでつながります。他の領域のソースを直接参照するコードは書きません。
 - 業務環境について分かっている事実と、学習用に置いた仮定は [docs/architecture/ の「仮定」](docs/architecture/README.md#仮定) で分けています。仮定を事実のように書かないでください。
 
-## 設計書から実装する
+## 設計の文書から実装する
 
-機能の追加や変更は、設計書（Markdown）を先に書き、それに沿って実装します。
+機能の追加や変更は、集約リポジトリの issue から始め、設計の文書（Markdown）を先に変更後の作りに直し、それに沿って実装します。設計の文書は、設計の文書のフォルダ `docs/design/{web,api,authz,auth,infra,shared}/` に、作るもの 1 つにつき 1 本で置く「今の作り」の文書です（`shared` は領域をまたぐ仕組み）。各フォルダの全体像は `README.md` にあり、案内は [docs/design/README.md](docs/design/README.md) にあります。
 
 | 段階 | 使うスキル | 成果物 |
 |---|---|---|
-| 設計書を書く | `writing-design-doc` | `docs/design/NNNN-<slug>.md`（[索引](docs/design/README.md)） |
+| 課題を起票し、進み具合を追う | `writing-design-doc`、`implementing-from-design`、`writing-docs`、`pr-and-commit` | 集約リポジトリの issue（[課題のテンプレート](.github/ISSUE_TEMPLATE/issue.md)。課題、決めること、やることのチェックリスト） |
+| 設計の文書を直す・足す | `writing-design-doc` | `docs/design/<フォルダ>/` の、変わる部分の文書（新しく作るものは 1 本足し、全体像の `README.md` に 1 行足す） |
 | 文書を評価して直す | `writing-docs`（エージェント `doc-review`） | 合格した文書と `docs/review/` の記録 |
 | 契約を変える | `updating-openapi-contract` | `*/openapi/*.yaml` とバージョン |
-| 課題を起票し、進み具合を追う | `writing-design-doc`、`implementing-from-design`、`writing-docs`、`pr-and-commit` | 集約リポジトリの issue（[課題のテンプレート](.github/ISSUE_TEMPLATE/issue.md)。課題、決めること、やることのチェックリスト） |
 | 実装する | `implementing-from-design` | 各リポジトリのコードとテスト |
 | 取り込む | `pr-and-commit` | PR（テンプレートに沿った本文）と CI |
-| 設計と実装のずれを確かめる | エージェント `design-review` | 指摘の一覧（`docs/review/` に記録） |
+| 文書と実装のずれを確かめる | エージェント `design-review` | 指摘の一覧（`docs/review/` に記録） |
 
-設計書に未決事項が残っているうち、また状態が「承認」になるまでは実装を始めません。作業の進み具合（どの段が済んだか）は設計書に書かず、issue に書きます。実装や文書の作成で残課題（後に回したこと、決まっていないこと、評価で残した指摘）が出たら、issue を起票します。実装中に設計と違う判断が必要になったら、黙って実装を変えず、設計書を直して差分を報告します。
+issue の「決めること」が残っているうちは実装を始めません。決まったことは設計の文書の本文に書きます。決まっていないこと、作る順序、作業の進み具合（どの段が済んだか）、残課題（後に回したこと、評価で残した指摘）は設計の文書に書かず、issue に書きます。実装中に文書と違う判断が必要になったら、黙って実装を変えず、文書を直して差分を報告します。
 
-文書の種類と置き場所、設計書と ADR の使い分けは [docs/README.md](docs/README.md) にあります。設計書は [docs/design/TEMPLATE.md](docs/design/TEMPLATE.md)、ADR は [docs/adr/TEMPLATE.md](docs/adr/TEMPLATE.md) の節構成で書きます。書いた文書は `writing-docs` の手順で `doc-review` に評価させ、合格させてから PR を出します。
+設計の文書に書くのは、作るもの 1 つです。1 本に 2 つ目の作るものが混ざったら文書を分け、全体像の `README.md` には細かいこと（値や設定）を書きません。方針とその理由、検討した案の比較は ADR に書きます（[docs/adr/TEMPLATE.md](docs/adr/TEMPLATE.md) の節構成）。文書の種類と置き場所、設計の文書と ADR の使い分けは [docs/README.md](docs/README.md) にあります。書いた文書は `writing-docs` の手順で `doc-review` に評価させ、合格させてから PR を出します。
 
 ## 図解ページを書く・直す
 
