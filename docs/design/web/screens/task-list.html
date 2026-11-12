@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>タスク一覧（fullstack-lab-web の画面のイメージ）</title>
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="page">
+
+<p class="back"><a href="index.html">← 画面の一覧と遷移</a></p>
+<h1>タスク一覧</h1>
+<p class="lead">ログインした直後に開く画面です。一般利用者には自分のタスクだけ、社員にはすべてのタスクを出します。</p>
+<div class="screen">
+  <div>
+    <p class="variant">一般利用者（alice）が開いたとき</p>
+    <div class="browser">
+      <div class="bar">http://localhost/</div>
+      <div class="app">
+        <header>
+          <span class="brand">fullstack-lab <span class="badge">マイページ</span></span>
+          <span class="user">alice <a class="logout" href="password.html">パスワード変更</a> <a class="logout" href="signup.html">ログアウト</a></span>
+        </header>
+        <h1>あなたのタスク</h1>
+        <p><a href="task-new.html">＋ タスクを登録</a></p>
+        <table>
+          <thead><tr><th>ID</th><th>タイトル</th><th>期限</th><th>状態</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><a href="task-detail.html">見積書を送る</a></td><td>2026-11-20</td><td class="muted">未完了</td></tr>
+            <tr><td>2</td><td><a href="task-detail.html">請求書を確認する</a></td><td>2026-11-03</td><td>完了</td></tr>
+            <tr><td>4</td><td><a href="task-detail.html">会議室を予約する</a></td><td>-</td><td class="muted">未完了</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <p class="variant">社員（task-viewer）が開いたとき</p>
+    <div class="browser">
+      <div class="bar">http://admin.localhost/</div>
+      <div class="app">
+        <header>
+          <span class="brand">fullstack-lab <span class="badge">管理画面</span></span>
+          <span class="user">viewer <span class="muted">（task-viewer）</span> <a class="logout" href="task-list.html">ログアウト</a></span>
+        </header>
+        <h1>すべてのタスク</h1>
+        <table>
+          <thead><tr><th>ID</th><th>タイトル</th><th>期限</th><th>状態</th><th>登録者</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><a href="task-detail.html">見積書を送る</a></td><td>2026-11-20</td><td class="muted">未完了</td><td>alice</td></tr>
+            <tr><td>2</td><td><a href="task-detail.html">請求書を確認する</a></td><td>2026-11-03</td><td>完了</td><td>alice</td></tr>
+            <tr><td>3</td><td><a href="task-detail.html">契約書を更新する</a></td><td>2026-12-01</td><td class="muted">未完了</td><td>bob</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="side">
+    <h3>表示</h3>
+    <ul>
+      <li>見出しは、一般利用者なら「あなたのタスク」、社員なら「すべてのタスク」</li>
+      <li>列は ID、タイトル、期限、状態。社員にだけ「登録者」の列を足す</li>
+      <li>期限が無いタスクは「-」</li>
+      <li>完了したタスクも隠さず、状態の列で見分ける</li>
+      <li>1 件も無いときは「タスクはまだありません。」</li>
+    </ul>
+    <h3>操作</h3>
+    <ul>
+      <li>「＋ タスクを登録」でタスク登録へ。登録できる人（一般利用者と <code>task-admin</code> の社員）にだけ出す</li>
+      <li>タイトルを押すとタスク詳細へ</li>
+    </ul>
+    <h3>うまくいかないとき</h3>
+    <ul>
+      <li>一覧を取れなかったら「一覧を取得できませんでした（ステータスコード）」</li>
+    </ul>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

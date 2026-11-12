@@ -1,0 +1,48 @@
+/* 画面のイメージ（docs/design/web/screens/）の各ページが共通で使う見た目 */
+/* ページ全体（説明の部分） */
+body { font-family: system-ui, sans-serif; margin: 0; background: #eceff3; color: #1f2328; line-height: 1.6; }
+.page { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+.page > h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.page > h2 { font-size: 1.2rem; margin: 24px 0 8px; }
+.back { margin: 0 0 12px; font-size: 0.9rem; }
+.lead { margin: 0 0 16px; color: #424a53; }
+.note { font-size: 0.9rem; color: #57606a; }
+
+/* 画面の一覧と遷移 */
+.flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; }
+.flow a { background: #fff; border: 1px solid #8c959f; border-radius: 6px; padding: 6px 12px; text-decoration: none; color: #1f2328; font-weight: 600; }
+.flow a small { display: block; font-weight: normal; color: #57606a; font-family: ui-monospace, monospace; }
+.flow .arrow { color: #57606a; font-size: 0.85rem; }
+.list { background: #fff; border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+.list th, .list td { border: 1px solid #d0d7de; padding: 6px 10px; text-align: left; vertical-align: top; }
+.list th { background: #f6f8fa; }
+code { font-family: ui-monospace, monospace; background: #f0f2f5; padding: 1px 4px; border-radius: 3px; font-size: 0.9em; }
+
+/* 画面 1 つ分（左にイメージ、右に説明） */
+.screen { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 20px; align-items: start; margin-top: 12px; }
+@media (max-width: 800px) { .screen { grid-template-columns: 1fr; } }
+.variant { font-size: 0.85rem; font-weight: 600; color: #57606a; margin: 16px 0 4px; }
+.variant:first-child { margin-top: 0; }
+.side h3 { font-size: 0.95rem; margin: 0 0 4px; }
+.side ul { margin: 0 0 14px; padding-left: 1.2em; font-size: 0.9rem; }
+
+/* ブラウザの枠 */
+.browser { border: 1px solid #8c959f; border-radius: 8px; overflow: hidden; background: #f6f7f9; box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.bar { background: #d8dee4; padding: 6px 10px; font-family: ui-monospace, monospace; font-size: 0.8rem; color: #424a53; }
+
+/* ここから下は、実際の画面（web/frontend/app/app.vue）と同じ見た目 */
+.app { padding: 0 16px 24px; font-size: 0.95rem; }
+.app header { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #d0d7de; margin-bottom: 16px; }
+.app .brand { font-weight: bold; }
+.app .user { font-size: 0.85rem; color: #57606a; }
+.app .badge { font-size: 0.75rem; font-weight: normal; background: #ddf4ff; color: #0969da; border-radius: 4px; padding: 2px 6px; margin-left: 4px; }
+.app .logout { margin-left: 12px; }
+.app a { color: #0969da; }
+.app h1 { font-size: 1.4rem; margin: 0 0 12px; }
+.app table { width: 100%; border-collapse: collapse; background: #fff; }
+.app th, .app td { text-align: left; padding: 8px; border-bottom: 1px solid #d0d7de; }
+.app label { display: block; margin-top: 12px; font-weight: 600; }
+.app input, .app textarea { width: 100%; box-sizing: border-box; padding: 6px; font: inherit; }
+.app button { margin-top: 16px; padding: 8px 16px; font: inherit; }
+.app .error { color: #cf222e; }
+.app .muted { color: #57606a; }

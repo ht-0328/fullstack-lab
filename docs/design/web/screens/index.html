@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>画面の一覧と遷移（fullstack-lab-web の画面のイメージ）</title>
+<link rel="stylesheet" href="screens.css">
+</head>
+<body>
+<div class="page">
+
+<h1>画面のイメージ</h1>
+<p class="lead">fullstack-lab-web の 5 つの画面を、画面ごとに 1 ページずつ、実際の画面と同じ項目と文言で描いたものです。動きません（ボタンを押しても送信しません）。画面の中のリンクを押すと、遷移先の画面のページへ移ります。</p>
+
+<h2>画面の一覧と遷移</h2>
+<div class="flow">
+  <a href="signup.html">会員登録<small>/signup</small></a>
+  <span class="arrow">登録後にログイン →</span>
+  <a href="task-list.html">タスク一覧<small>/</small></a>
+  <span class="arrow">「＋ タスクを登録」 →</span>
+  <a href="task-new.html">タスク登録<small>/tasks/new</small></a>
+  <span class="arrow">登録に成功 →</span>
+  <a href="task-detail.html">タスク詳細<small>/tasks/{id}</small></a>
+</div>
+<div class="flow">
+  <a href="task-list.html">タスク一覧<small>/</small></a>
+  <span class="arrow">タイトルを押す →</span>
+  <a href="task-detail.html">タスク詳細<small>/tasks/{id}</small></a>
+  <span class="arrow">　　どの画面でも、上の「パスワード変更」 →</span>
+  <a href="password.html">パスワード変更<small>/me/password</small></a>
+</div>
+
+<table class="list">
+  <tr><th>画面</th><th>URL</th><th>使える人</th><th>呼ぶ BFF</th></tr>
+  <tr><td><a href="task-list.html">タスク一覧</a></td><td><code>/</code></td><td>一般利用者、社員</td><td><code>GET /bff/tasks</code></td></tr>
+  <tr><td><a href="task-new.html">タスク登録</a></td><td><code>/tasks/new</code></td><td>一般利用者、社員（<code>task-admin</code>）</td><td><code>POST /bff/tasks</code></td></tr>
+  <tr><td><a href="task-detail.html">タスク詳細</a></td><td><code>/tasks/{id}</code></td><td>一般利用者（自分のタスクだけ）、社員</td><td><code>GET /bff/tasks/{id}</code>、<code>POST /bff/tasks/{id}/complete</code></td></tr>
+  <tr><td><a href="signup.html">会員登録</a></td><td><code>/signup</code></td><td>ログインしていない人</td><td><code>POST /bff/signup</code></td></tr>
+  <tr><td><a href="password.html">パスワード変更</a></td><td><code>/me/password</code></td><td>一般利用者</td><td><code>PUT /bff/me/password</code></td></tr>
+</table>
+<p class="note">どの画面も、上の帯（名前、ロール、リンク）を出すために <code>GET /bff/me</code> を呼びます。</p>
+
+</div>
+</body>
+</html>
