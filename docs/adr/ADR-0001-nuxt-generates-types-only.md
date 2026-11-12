@@ -21,12 +21,12 @@
 | 項目 | 内容 |
 |---|---|
 | 課題 | SSR のときとブラウザのときで、BFF の呼び先とヘッダーの扱いが違う。SSR のときは Nuxt サーバーが `http://bff:8080/bff/*` を直接呼び、ブラウザのときは同一オリジンの `/bff/*` を呼ぶ。ブラウザからの呼び出しには入口（すべてのリクエストを最初に受けて振り分けるもの。ローカルは Nginx、AWS では ALB）が JWT（`x-amzn-oidc-accesstoken`）とリクエスト ID（`x-request-id`）を付けるが、SSR のときは入口を通らないので、Nuxt が元のリクエストから自分で BFF へ転送する必要がある |
-| 制約 | 契約が画面と BFF の境界の唯一の定義であり、画面側の型は契約から生成する（[設計書 0003](../design/0003-contracts-and-repositories.md)） |
+| 制約 | 契約が画面と BFF の境界の唯一の定義であり、画面側の型は契約から生成する（[契約からのコード生成](../design/shared/code-generation.md)） |
 | 事実 | 業務環境では、画面側の型と DTO は OpenAPI から生成し、BFF を呼ぶクライアントは手で書いていた（[業務環境について聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
 | 仮定 | 業務環境で画面側のクライアントを手で書いていた理由は分かっていない。このリポジトリでは、型だけを生成し `openapi-fetch`（生成した型を使う薄い型付きクライアントのライブラリ）と手書きの composable（Nuxt で処理をまとめて再利用する関数）で BFF を呼ぶ形を、業務環境の手書きのクライアントを型安全にしたものとみなす（[仮定 11](../architecture/README.md#仮定)） |
 | 候補 | 候補は 2 つ。`openapi-generator` の `typescript-fetch` / `typescript-axios` は HTTP の層（リクエストを送ってレスポンスを受け取るコード）まで生成する。`openapi-typescript` は型だけを生成し、呼び出しは `openapi-fetch` で行う |
 
-この ADR の採用後に[設計書 0005](../design/0005-auth-api-and-signup.md) で加わった認証 API（一般利用者のアカウント管理を行う API。[用語](../architecture/README.md#用語)）を BFF が呼ぶ `auth-client` も、Kotlin 側のクライアントなので「決定」の表の「対象外」に含める。
+この ADR の採用後に加わった認証 API（一般利用者のアカウント管理を行う API。[用語](../architecture/README.md#用語)）を BFF が呼ぶ `auth-client` も、Kotlin 側のクライアントなので「決定」の表の「対象外」に含める。
 
 ## 決定
 

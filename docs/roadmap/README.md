@@ -42,7 +42,7 @@
 | 5 | Nginx の配置 | パターン A（ALB の後ろに Nginx を置く）にする | 「Nginx の配置」 |
 | 6 | 社員の IdP の Okta（フェーズ 5） | Okta の無料の Integrator Free Plan で本物を使う | 「IdP の用意」 |
 | 7 | CodeBuild の呼び出し方（フェーズ 6） | Actions から `aws-actions/aws-codebuild-run-build` で起動する | 「GitHub Actions と CodeBuild の責務分担」 |
-| 8 | CodeArtifact の認証トークンの取得と保持（フェーズ 6） | 未決。CodeBuild と Actions のどちらで取得し、どこに保持するかを、作成者がフェーズ 6 の着手前に決める（[#32](https://github.com/ht-0328/fullstack-lab/issues/32)、[設計書 0003](../design/0003-contracts-and-repositories.md) の「課題・申し送り事項」） | 「CodeArtifact が担当すること」 |
+| 8 | CodeArtifact の認証トークンの取得と保持（フェーズ 6） | 未決。CodeBuild と Actions のどちらで取得し、どこに保持するかを、作成者がフェーズ 6 の着手前に決める（[#32](https://github.com/ht-0328/fullstack-lab/issues/32)） | 「CodeArtifact が担当すること」 |
 
 各フェーズの進め方も決まっています。リソースは、まずマネジメントコンソール（AWS の Web 画面）で 1 回作って理解してから Terraform のコードに書き起こし、コンソールで作ったものは消します。残すのはコードだけです。先に作って見てから書くと、コードが何を作っているかを理解しやすいためです。
 
@@ -54,7 +54,7 @@
 
 IaC のツールには Terraform を使います。AWS CDK（TypeScript で AWS の構成を書くツール）でも同じ構成を書けますが、Terraform は学習に使える資料が多く、一般の業務でも広く使われているので、Terraform にしました。Terraform のコードは、マネジメントコンソールで 1 回作って理解したものを書き起こします（「フェーズ 3 以降に着手する前に決めること」の節）。
 
-コードは AWS のインフラのリポジトリ `fullstack-lab-infra` に置きます（[設計書 0006](../design/0006-aws-foundation-and-ecr.md)）。`fullstack-lab-infra` は、集約リポジトリ（この文書がある fullstack-lab。[用語](../architecture/README.md#用語)）の `infra/` に submodule として入ります。環境ごとのディレクトリ（`envs/dev`）とモジュールは、フェーズ 4 でそこに足す予定です。
+コードは AWS のインフラのリポジトリ `fullstack-lab-infra` に置きます（[インフラの全体像](../design/infra/README.md)）。`fullstack-lab-infra` は、集約リポジトリ（この文書がある fullstack-lab。[用語](../architecture/README.md#用語)）の `infra/` に submodule として入ります。環境ごとのディレクトリ（`envs/dev`）とモジュールは、フェーズ 4 でそこに足す予定です。
 
 ### Nginx の配置
 

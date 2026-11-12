@@ -16,7 +16,7 @@
 
 手元（開発者の PC）で AWS CLI（AWS をコマンドで操作する公式の道具）と Terraform（AWS の構成をコードで書いて作る道具。[ロードマップの「IaC」](../roadmap/README.md#iac)）をどう動かすかを、決め直す。[ADR-0004](ADR-0004-run-aws-tools-in-docker.md) は、2 つの道具をホスト（コンテナを動かす側の環境。作成者の環境では Windows の WSL）に入れず、公式のイメージを `scripts/aws.sh` と `scripts/tf.sh` のラッパーから 1 コマンドごとに動かすと決めた。このラッパーでは、コマンドが公式の文書と違う形（`aws login` が `./scripts/aws.sh login`）になり、公式の文書の手順をそのまま打てない。
 
-インフラのコードは、集約リポジトリ（このリポジトリ fullstack-lab。[用語](../architecture/README.md#用語)）に直接置かず、独立した infra リポジトリに置く（[設計書 0006 の「比較した代替案とトレードオフ」](../design/0006-aws-foundation-and-ecr.md#比較した代替案とトレードオフ)）。infra リポジトリは [fullstack-lab-infra](https://github.com/ht-0328/fullstack-lab-infra) で、集約リポジトリの `infra/` に submodule として入る。ADR-0004 はラッパーを集約リポジトリの `scripts/` に置いていたので、道具の置き場所も決め直す必要があった。
+インフラのコードは、集約リポジトリ（このリポジトリ fullstack-lab。[用語](../architecture/README.md#用語)）に直接置かず、独立した infra リポジトリに置く（[インフラの全体像](../design/infra/README.md)）。infra リポジトリは [fullstack-lab-infra](https://github.com/ht-0328/fullstack-lab-infra) で、集約リポジトリの `infra/` に submodule として入る。ADR-0004 はラッパーを集約リポジトリの `scripts/` に置いていたので、道具の置き場所も決め直す必要があった。
 
 次の表は、決定の前提になる課題、制約、分かっている事実を分けて示す。この決定は道具の用意の仕方だけを決め、業務環境（作成者が以前いた職場。[用語](../architecture/README.md#用語)）について不確かなまま置いたことは無いので、仮定の行は置かない。
 
@@ -24,7 +24,7 @@
 |---|---|
 | 課題 | ラッパーでは、公式の文書や記事の手順を打つたびに、コマンドを読み替える必要がある。読み替えを避けるにはシェルのエイリアスを使えるが、開発者がそれぞれ自分の環境に足す手順が要る |
 | 制約 | ホストに AWS CLI と Terraform を入れない。理由は ADR-0004 と同じで、人ごとのバージョンのずれを防ぎ、ホストには Docker と git だけを置くためである |
-| 制約 | 長期のアクセスキー（期限の無い認証情報）を作らない。漏れても期限が切れれば使えなくなる認証情報だけを使うためである。手元のログインは `aws login`（AWS CLI 2.32.0 から使える、マネジメントコンソールと同じ ID とパスワードで期限つきの認証情報を得るコマンド）で行う（[設計書 0006 の「制約と前提」](../design/0006-aws-foundation-and-ecr.md#制約と前提)） |
+| 制約 | 長期のアクセスキー（期限の無い認証情報）を作らない。漏れても期限が切れれば使えなくなる認証情報だけを使うためである。手元のログインは `aws login`（AWS CLI 2.32.0 から使える、マネジメントコンソールと同じ ID とパスワードで期限つきの認証情報を得るコマンド）で行う（[インフラの全体像の「制約」](../design/infra/README.md#制約)） |
 | 事実 | AWS と HashiCorp は、公式のコンテナイメージ（`amazon/aws-cli`、`hashicorp/terraform`）を配布している。Terraform は 1 つのファイルで動くプログラムで、公式のイメージから取り出して別のイメージに入れられる。`aws login` は、ブラウザの無い環境向けに `--remote`（表示された URL を別の画面で開き、サインイン後に表示されたコードを貼り付ける）を持つ |
 
 ## 決定
@@ -39,7 +39,7 @@ AWS CLI と Terraform を 1 つのイメージに入れ、開発者はそのコ�
 
 | 項目 | 内容 |
 |---|---|
-| 適用対象 | 手元からの AWS CLI と Terraform の実行。最初の適用は [設計書 0006](../design/0006-aws-foundation-and-ecr.md) の `infra/bootstrap` と `infra/shared`。infra リポジトリの CI（PR ごとに GitHub Actions で動く検査）も同じイメージで、AWS に接続しない `terraform fmt -check` と `terraform validate` を動かす |
+| 適用対象 | 手元からの AWS CLI と Terraform の実行。最初の適用は `infra/bootstrap` と `infra/shared`（[Terraform の state の置き場所](../design/infra/terraform-state-bucket.md)）。infra リポジトリの CI（PR ごとに GitHub Actions で動く検査）も同じイメージで、AWS に接続しない `terraform fmt -check` と `terraform validate` を動かす |
 | 適用開始日 | 2026-11-03 |
 | 対象外 | GitHub Actions の中で AWS に接続するジョブ（領域の各リポジトリにある、ECR（AWS のコンテナイメージの置き場）へイメージを push するワークフローなど）。これらは公式のアクション（`aws-actions/configure-aws-credentials` など）と OIDC（GitHub が発行するトークンで AWS の期限つきの認証情報を得る仕組み）で認証し、このコンテナは使わない |
 | 決定者 | ht-0328 |
@@ -53,7 +53,7 @@ AWS CLI と Terraform を 1 つのイメージに入れ、開発者はそのコ�
 | 公式の文書どおりに打てる | コンテナの中では `aws` と `terraform` がそのままのコマンド名で動く | 開発者は文書の手順を読み替えずに打てるので、エイリアスも要らない |
 | バージョンをそろえる | バージョンは `Dockerfile` の 2 つの `FROM` のタグにだけ書くので、誰が動かしても同じになる。上げるときは PR の差分に出る | ADR-0004 と同じくそろう |
 | 保守の量 | 自前の `Dockerfile` だが、中身は公式のイメージ 2 つを組み合わせるだけで、インストールの手順を書かない | 上げるときに変えるのはタグだけで、ラッパー 2 つを保守するのと変わらない |
-| 認証情報の回避策 | Terraform の AWS プロバイダー（Terraform が AWS を操作するための部品）は 6.23.0 から、S3 backend（Terraform が作ったリソースの記録である state を S3（AWS のファイルの置き場）に置く設定）は 1.15.0 から `aws login` の認証情報を読めると公開の検証記事（[Terraform S3 Backend で aws login 認証が使えるか検証してみた](https://dev.classmethod.jp/articles/terraform-s3-backend-aws-login/)）にあるが、公式の文書では確かめていない。[設計書 0006 の「実装の段取り」](../design/0006-aws-foundation-and-ecr.md#実装の段取り)で、`infra/bootstrap` と `infra/shared` を Terraform で作る段の最初に確かめる。読めない場合は、同じコンテナで `aws configure export-credentials --format env` を打ち、出た期限つきの認証情報を環境変数に入れてから `terraform` を打てる（[設計書 0006 の「失敗時の動作」](../design/0006-aws-foundation-and-ecr.md#失敗時の動作)） | 2 つの道具が同じコンテナにあるので、回避策もコンテナの中で完結する |
+| 認証情報の回避策 | Terraform の AWS プロバイダー（Terraform が AWS を操作するための部品）は 6.23.0 から、S3 backend（Terraform が作ったリソースの記録である state を S3（AWS のファイルの置き場）に置く設定）は 1.15.0 から `aws login` の認証情報を読めると公開の検証記事（[Terraform S3 Backend で aws login 認証が使えるか検証してみた](https://dev.classmethod.jp/articles/terraform-s3-backend-aws-login/)）にあるが、公式の文書では確かめていない。`infra/bootstrap` と `infra/shared` を Terraform で作るときに、最初に確かめる（[Terraform の state の置き場所の「`aws login` の認証情報を読めるバージョン」](../design/infra/terraform-state-bucket.md#aws-login-の認証情報を読めるバージョン)）。読めない場合は、同じコンテナで `aws configure export-credentials --format env` を打ち、出た期限つきの認証情報を環境変数に入れてから `terraform` を打てる（[AWS へのログインの「失敗時の動作」](../design/infra/aws-login.md#失敗時の動作)） | 2 つの道具が同じコンテナにあるので、回避策もコンテナの中で完結する |
 | 置き場所 | インフラのコードと道具が同じ infra リポジトリにあり、そのリポジトリの CI も同じイメージを使う | 手元と CI で同じ道具を使える |
 
 ## 結果と影響

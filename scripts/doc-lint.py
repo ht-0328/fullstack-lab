@@ -6,12 +6,12 @@
   python3 scripts/doc-lint.py docs/README.md  # 指定した文書だけ
 
 確かめること（番号は docs/README.md の決まり）:
-  F-2  先頭の表の 7 項目。設計書と ADR の状態の行
+  F-2  先頭の表の 7 項目（docs/design/<フォルダ>/ の設計の文書は除く）。ADR の状態の行
   F-5  相対リンクの先（ファイルと見出し）があること。リンクの表示文言がパスのままでないこと
   W-6  1 段落が 4 文まで（箇条書き、引用、コードブロックは除く）。表のセルも 1 段落として数える。括弧の中は 2 文まで
   W-9  architecture/ の「用語」で決めた言い換え（本文で「版」と書かない）
 
-1 件でも見つかれば終了コード 1 を返す。評価の記録（docs/review/docs-*.md）とテンプレートは対象外。
+1 件でも見つかれば終了コード 1 を返す。評価の記録（docs/review/docs-*.md）と ADR のテンプレート（TEMPLATE.md）は対象外。
 """
 import glob
 import os
@@ -60,10 +60,11 @@ def check(path: str) -> list:
     problems = []
 
     # F-2 先頭の表
-    for item in HEADER_ITEMS:
+    area_doc = re.search(r"^docs/design/[a-z]+/[^/]+\.md$", os.path.relpath(os.path.abspath(path), ROOT).replace(os.sep, "/")) is not None  # 設計の文書は先頭の表を置かない
+    for item in ([] if area_doc else HEADER_ITEMS):
         if not re.search(rf"^\| {re.escape(item)} \|", text, re.M):
             problems.append(("F-2", 1, f"先頭の表に「{item}」が無い"))
-    if re.match(r".*docs/(design/\d{4}|adr/ADR-\d{4})", path) and "> **状態: " not in text:
+    if re.match(r".*docs/adr/ADR-\d{4}", path) and "> **状態: " not in text:
         problems.append(("F-2", 1, "状態の行（> **状態: 〜。**）が無い"))
 
     # F-5 リンク

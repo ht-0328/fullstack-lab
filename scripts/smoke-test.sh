@@ -102,7 +102,7 @@ check "外部 500 でも詳細は 200 で UNAVAILABLE になる" 200 '"dueDateIn
 create_task "期限日=遅延スタブのタスクを登録できる" 201 "$ALICE" "$CUSTOMER_URL" '{"title":"smoke: 遅延","dueDate":"2099-01-01"}'
 check "外部の遅延はタイムアウトして UNAVAILABLE になる" 200 '"dueDateInfoStatus":"UNAVAILABLE"' -b "$ALICE" "$CUSTOMER_URL/bff/tasks/$CREATED_ID"
 
-echo "[タスクの完了（設計書 0004）: BFF → 認可 API → API → DB]"
+echo "[タスクの完了: BFF → 認可 API → API → DB]"
 create_task "完了にするタスクを登録する" 201 "$ALICE" "$CUSTOMER_URL" '{"title":"smoke: 完了"}'
 done_task=$CREATED_ID
 check "詳細で本人には完了ボタンの出し分けが true で返る" 200 '"canComplete":true' -b "$ALICE" "$CUSTOMER_URL/bff/tasks/$done_task"

@@ -14,18 +14,18 @@
 
 ## 状況
 
-BFF（画面専用のサーバー側 API）が、API（タスクを扱う業務の API）と認可 API（操作してよいかを判定する API）を呼ぶクライアント（契約から生成した、リクエストを組み立てて送るコード）を、どのリポジトリで生成し、どう受け渡すかを決める。このリポジトリは、作成者が以前いた職場（業務環境）の構成を学習用に再現している（[用語](../architecture/README.md#用語)）。[設計書 0003](../design/0003-contracts-and-repositories.md) では、画面 + BFF、API、認可 API を、それぞれ領域（独立したリポジトリで作るアプリの単位）として別のリポジトリにし、領域同士を OpenAPI の契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`）だけでつなぐことにした。そのため、BFF が API と認可 API のソースを見ずにクライアントを手に入れる方法を、リポジトリを分けるのと同時に決める必要があった。
+BFF（画面専用のサーバー側 API）が、API（タスクを扱う業務の API）と認可 API（操作してよいかを判定する API）を呼ぶクライアント（契約から生成した、リクエストを組み立てて送るコード）を、どのリポジトリで生成し、どう受け渡すかを決める。このリポジトリは、作成者が以前いた職場（業務環境）の構成を学習用に再現している（[用語](../architecture/README.md#用語)）。このリポジトリでは（[architecture/ の「契約（OpenAPI）とリポジトリの分割」](../architecture/README.md#契約openapiとリポジトリの分割)）、画面 + BFF、API、認可 API を、それぞれ領域（独立したリポジトリで作るアプリの単位）として別のリポジトリにし、領域同士を OpenAPI の契約（領域同士の API の取り決め。各領域の `openapi/*.yaml`）だけでつなぐことにした。そのため、BFF が API と認可 API のソースを見ずにクライアントを手に入れる方法を、リポジトリを分けるのと同時に決める必要があった。
 
 次の表は、決定の前提になる課題、制約、分かっている事実と、学習用に置いた仮定を分けて示す。表の中の提供側は契約を定義して公開する側（API と認可 API）、利用側はそれを呼ぶ側（BFF）を指す。
 
 | 項目 | 内容 |
 |---|---|
 | 課題 | 別のリポジトリにある契約から生成したコードを、リポジトリ間で安全に共有する |
-| 制約 | 利用側は提供側のソースを参照しない。領域同士は契約だけでつなぐという [設計書 0003](../design/0003-contracts-and-repositories.md) の方針を守るためである。また、利用側がどのバージョンの契約に追従しているかを追跡できるようにする。追従の遅れを見つけるためである |
+| 制約 | 利用側は提供側のソースを参照しない。領域同士は契約だけでつなぐという [architecture/ の「契約（OpenAPI）とリポジトリの分割」](../architecture/README.md#契約openapiとリポジトリの分割) の方針を守るためである。また、利用側がどのバージョンの契約に追従しているかを追跡できるようにする。追従の遅れを見つけるためである |
 | 事実 | 業務環境では、API を呼ぶときに API クライアントを作っていた。また、CodeArtifact（AWS が提供する、ライブラリを登録して配布するパッケージリポジトリ）を使っていたが、何に使っていたかは分かっていない（[業務環境について聞いている事実](../architecture/README.md#業務環境について聞いている事実)） |
 | 仮定 | 業務環境では、API 側が生成したクライアントを、Maven（Java や Kotlin のライブラリをバージョンを付けて配布する仕組み。Maven の形式でライブラリを置くパッケージリポジトリを Maven リポジトリと呼ぶ）の成果物（配布するライブラリ。[用語](../architecture/README.md#用語)）として publish（Maven リポジトリに登録すること）し、BFF がバージョンを指定して依存していたと仮定する（[仮定 10](../architecture/README.md#仮定)）。BFF 側で生成していた可能性もある |
 
-この ADR の採用後に [設計書 0005](../design/0005-auth-api-and-signup.md) で領域に加わった認証 API（一般利用者のアカウント管理を行う API。`auth`）の `auth-client` も、「決定」の表の「適用対象」に含める（「決定」「理由」「結果と影響」の提供側は、採用したときの API と認可 API を指す）。
+この ADR の採用後に領域に加わった認証 API（一般利用者のアカウント管理を行う API。`auth`）の `auth-client` も、「決定」の表の「適用対象」に含める（「決定」「理由」「結果と影響」の提供側は、採用したときの API と認可 API を指す）。
 
 ## 決定
 
@@ -37,7 +37,7 @@ BFF（画面専用のサーバー側 API）が、API（タスクを扱う業務�
 
 | 項目 | 内容 |
 |---|---|
-| 適用対象 | `com.example.fullstacklab:api-client`、`authz-client`（2026-10-28 から）。`auth-client` も 2026-10-30 から同じ方針で配布している（[設計書 0005](../design/0005-auth-api-and-signup.md)） |
+| 適用対象 | `com.example.fullstacklab:api-client`、`authz-client`（2026-10-28 から）。`auth-client` も 2026-10-30 から同じ方針で配布している（[生成クライアントの publish と取得](../design/shared/client-distribution.md)） |
 | 適用開始日 | 2026-10-28 |
 | 対象外 | 画面（Nuxt）が BFF を呼ぶクライアント。型だけを生成し、成果物として配布しない（[ADR-0001](ADR-0001-nuxt-generates-types-only.md)） |
 | 配布先 | ローカルは Reposilite（Compose の中で動かす Maven リポジトリ。`http://localhost:8081`）、CI は GitHub Packages（GitHub が提供するパッケージリポジトリ。`GITHUB_TOKEN` で取得する）、AWS は CodeArtifact。CodeArtifact への置き換えはフェーズ 6 の予定である（[ロードマップの「CodeArtifact が担当すること」](../roadmap/README.md#codeartifact-が担当すること)） |
@@ -66,15 +66,15 @@ BFF（画面専用のサーバー側 API）が、API（タスクを扱う業務�
 | 悪くなること | 提供側のちょっとした変更でも、利用側で使うにはバージョンを上げて publish する必要がある | 提供側のリポジトリ（`api`、`authz`）の開発者 |
 | 悪くなること | BFF の Docker ビルドは、ビルド中に Maven リポジトリへ到達できることを前提にする。ローカルでは `localhost:8081` の Reposilite に届くように、ビルドを host ネットワークで動かす（`compose.yaml` の `network: host`）。CI では GitHub Packages の資格情報（`MAVEN_REPO_USER`、`MAVEN_REPO_PASSWORD`）を、build secret（イメージに残らない形でビルドに渡す値）として渡す | CI を保守する人と、BFF をローカルでビルドする開発者 |
 
-契約を変えるときの具体的な順序（提供側が仕様の `info.version` とクライアントのビルドの `version` を上げて publish し、利用側が `web/bff/gradle.properties` のバージョンを上げて追従する）は、[設計書 0003 の「契約を変えるときの順序」](../design/0003-contracts-and-repositories.md#契約を変えるときの順序) とスキル [updating-openapi-contract](../../.agents/skills/updating-openapi-contract/SKILL.md) にある。
+契約を変えるときの具体的な順序（提供側が仕様の `info.version` とクライアントのビルドの `version` を上げて publish し、利用側が `web/bff/gradle.properties` のバージョンを上げて追従する）は、[契約のバージョンと変更の順序の「変更の順序」](../design/shared/contract-versioning.md#変更の順序) とスキル [updating-openapi-contract](../../.agents/skills/updating-openapi-contract/SKILL.md) にある。
 
 この決定は「状況」の表の仮定（仮定 10）に頼るので、業務環境のクライアントの配布の仕方が分かり、仮定 10 が崩れたら見直す。
 
 ## 検討したが採らなかった案
 
-次の表は、検討した他の案と、採らなかった理由を示す。比較の全体は [設計書 0003 の「比較した代替案とトレードオフ」](../design/0003-contracts-and-repositories.md#比較した代替案とトレードオフ) にある。
+次の表は、検討した他の案と、採らなかった理由を示す。
 
 | 案 | 利点 | 採らなかった理由 |
 |---|---|---|
-| BFF が API と認可 API のソースを直接参照する（同じリポジトリに置く、または git submodule で取り込む） | publish の仕組みもバージョンの指定も要らず、提供側の変更がすぐ利用側に届く | 提供側の内部の変更が利用側に漏れ、利用側がどのバージョンの契約に追従しているかも追えない。これは、領域同士を契約だけでつなぐという [設計書 0003](../design/0003-contracts-and-repositories.md) の方針に反する |
+| BFF が API と認可 API のソースを直接参照する（同じリポジトリに置く、または git submodule で取り込む） | publish の仕組みもバージョンの指定も要らず、提供側の変更がすぐ利用側に届く | 提供側の内部の変更が利用側に漏れ、利用側がどのバージョンの契約に追従しているかも追えない。これは、領域同士を契約だけでつなぐという [architecture/ の「契約（OpenAPI）とリポジトリの分割」](../architecture/README.md#契約openapiとリポジトリの分割) の方針に反する |
 | BFF 側で API の仕様からクライアントを生成する | publish の仕組みが要らない | BFF が API の仕様ファイルを参照する経路が要り、どのバージョンの契約に追従するかの管理が BFF 任せになる。また、このリポジトリでは成果物を配布する流れを学ぶことを優先した |

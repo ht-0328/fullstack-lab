@@ -21,7 +21,7 @@
 | 項目 | 内容 |
 |---|---|
 | 課題 | ホストに直接入れると、人ごとにバージョンがずれ、ずれたまま `terraform apply`（コードに書いた構成を AWS に反映するコマンド）を実行すると state（Terraform が作ったリソースを記録したファイル）の形式や結果が変わる |
-| 制約 | 長期のアクセスキー（期限の無い認証情報）を作らない。漏れても期限が切れれば使えなくなる認証情報だけを使うためである（[設計書 0006](../design/0006-aws-foundation-and-ecr.md) の「制約と前提」）。手元のログインは `aws login`（AWS CLI 2.32.0 から使える、マネジメントコンソールと同じ ID とパスワードで期限つきの認証情報を得るコマンド）で行う |
+| 制約 | 長期のアクセスキー（期限の無い認証情報）を作らない。漏れても期限が切れれば使えなくなる認証情報だけを使うためである（[インフラの全体像の「制約」](../design/infra/README.md#制約)）。手元のログインは `aws login`（AWS CLI 2.32.0 から使える、マネジメントコンソールと同じ ID とパスワードで期限つきの認証情報を得るコマンド）で行う |
 | 事実 | AWS と HashiCorp（Terraform の開発元）は、公式のコンテナイメージ（`amazon/aws-cli`、`hashicorp/terraform`）を配布している。`aws login` は、ブラウザの無い環境向けに `--remote`（表示された URL を別の画面で開き、サインイン後に表示されたコードを貼り付ける）を持つ |
 
 ## 決定
@@ -34,7 +34,7 @@ AWS CLI と Terraform はホストに入れず、公式のコンテナイメー�
 
 | 項目 | 内容 |
 |---|---|
-| 適用対象 | 手元からの AWS CLI と Terraform の実行。最初の適用は [設計書 0006](../design/0006-aws-foundation-and-ecr.md) の `infra/bootstrap` と `infra/shared` |
+| 適用対象 | 手元からの AWS CLI と Terraform の実行。最初の適用は `infra/bootstrap` と `infra/shared`（[Terraform の state の置き場所](../design/infra/terraform-state-bucket.md)） |
 | 適用開始日 | 2026-11-03 |
 | 対象外 | GitHub Actions の中での AWS の操作。Actions は公式のアクション（`aws-actions/configure-aws-credentials` など）と OIDC（GitHub が発行するトークンで AWS の期限つきの認証情報を得る仕組み）で認証し、このラッパーは使わない |
 | 決定者 | ht-0328 |
@@ -68,5 +68,5 @@ AWS CLI と Terraform はホストに入れず、公式のコンテナイメー�
 | 案 | 利点 | 採らなかった理由 |
 |---|---|---|
 | ホスト（WSL）に直接入れる（AWS CLI は公式のインストーラー、Terraform はバージョン管理ツールの `tfenv` や `mise`） | 個人の開発ではもっとも一般的で、`aws login` の既定の流れも補完も使える | バージョンが人ごとにずれうるうえ、このリポジトリの「ホストには Docker と git だけ」という前提が崩れる。`tfenv` や `mise` でそろえても、それ自体を入れる手順が要る |
-| AWS CLI と Terraform を入れたイメージを自前の Dockerfile で作る | 1 つのイメージで両方が動き、Terraform から AWS CLI を呼べる | Terraform の AWS プロバイダーは 6.23.0 から、Terraform 本体の S3 backend（state を S3 に置く設定）は 1.15.0 から、`aws login` の認証情報を自分で読めると公開の検証記事（[Terraform S3 Backend で aws login 認証が使えるか検証してみた](https://dev.classmethod.jp/articles/terraform-s3-backend-aws-login/)）にあるが、公式の文書では確かめていない。[設計書 0006](../design/0006-aws-foundation-and-ecr.md) の「実装の段取り」で、`infra/bootstrap` と `infra/shared` を Terraform で作る段の最初に、作成者がこの読み込みを確かめる。読めない場合も、`./scripts/aws.sh configure export-credentials --format env` で出した期限つきの認証情報を環境変数で `scripts/tf.sh` に渡せる（[設計書 0006 の「失敗時の動作」](../design/0006-aws-foundation-and-ecr.md#失敗時の動作)）。どちらでも Terraform のコンテナに AWS CLI は要らず、公式のイメージを 2 つ使えば Dockerfile の保守も要らない |
+| AWS CLI と Terraform を入れたイメージを自前の Dockerfile で作る | 1 つのイメージで両方が動き、Terraform から AWS CLI を呼べる | Terraform の AWS プロバイダーは 6.23.0 から、Terraform 本体の S3 backend（state を S3 に置く設定）は 1.15.0 から、`aws login` の認証情報を自分で読めると公開の検証記事（[Terraform S3 Backend で aws login 認証が使えるか検証してみた](https://dev.classmethod.jp/articles/terraform-s3-backend-aws-login/)）にあるが、公式の文書では確かめていない。`infra/bootstrap` と `infra/shared` を Terraform で作るときの最初に、作成者がこの読み込みを確かめる。読めない場合も、`./scripts/aws.sh configure export-credentials --format env` で出した期限つきの認証情報を環境変数で `scripts/tf.sh` に渡せる（[AWS へのログインの「失敗時の動作」](../design/infra/aws-login.md#失敗時の動作)）。どちらでも Terraform のコンテナに AWS CLI は要らず、公式のイメージを 2 つ使えば Dockerfile の保守も要らない |
 | Dev Container（開発環境ごとコンテナに入れる VS Code の機能）にまとめる | エディターも含めて環境をそろえられる | AWS の操作のためだけに開発のやり方全体を変えることになり、変更が大きい |
